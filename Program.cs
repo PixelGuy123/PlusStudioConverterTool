@@ -1,4 +1,5 @@
 ﻿using PlusLevelFormat;
+using System.Diagnostics;
 
 namespace CBLDtoBLD;
 
@@ -34,15 +35,14 @@ static class BLDConverter
 		}
 		file = Path.GetFullPath(file);
 		Console.Clear();
-
+		Stopwatch w = Stopwatch.StartNew();
 		try
 		{
 			Console.WriteLine("Reading level..");
 			Level level;
 			using (var reader = new BinaryReader(File.OpenRead(file)))
-			{
 				level = LevelExtensions.ReadLevel(reader);
-			}
+			
 
 			Console.WriteLine("Converting level...");
 			var dir = Path.GetDirectoryName(file);
@@ -53,11 +53,12 @@ static class BLDConverter
 			string fname = Path.Combine(dir, Path.GetFileNameWithoutExtension(file) + ".bld");
 
 			using (var writer = new BinaryWriter(File.OpenWrite(fname)))
-			{
 				level.ConvertToEditor().SaveIntoStream(writer);
-			}
+			
 
+			w.Stop();
 			LogAtColor(ConsoleColor.Green, $"CBLD file converted as {Path.GetFileName(fname)}");
+			Console.WriteLine("Time taken: " + w.ElapsedMilliseconds + "ms");
 			Console.WriteLine("Press any key to quit...");
 			Console.Read();
 		}

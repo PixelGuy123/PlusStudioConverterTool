@@ -3,6 +3,7 @@ using PlusLevelFormat;
 using PlusLevelLoader;
 
 namespace CBLDtoBLD;
+
 using Console = System.Console;
 
 internal static class Converters
@@ -32,13 +33,6 @@ internal static class Converters
 			newLevel.items.AddRange(level.rooms[i].items);
 			newLevel.prefabs.AddRange(level.rooms[i].prefabs);
 			newLevel.defaultTextures.TryAdd(level.rooms[i].type, level.rooms[i].textures);
-
-			var newHall = newLevel.rooms.Find(x => x.type == "hall");
-			if (newHall != null)
-			{
-				newLevel.RemoveRoomInternal(newLevel._hallRoom);
-				newLevel._hallRoom = newHall;
-			}
 		}
 
 		Console.WriteLine("Initializing tile data...");
@@ -47,44 +41,58 @@ internal static class Converters
 		{
 			int x = tile.position.x;
 			int y = tile.position.y;
+			if (!level.tiles.InBounds(x, y) || !level.tiles[x, y].IsValid()) continue;
+
 			foreach (var dir in tile.DirsFromTile())
 			{
 				var vec = dir.ToByteVector2();
-				x += vec.x;
-				y += vec.y;
+				//Console.WriteLine($"Checking wall at ({x},{y}) as placed in dir: {dir} with offset: ({vec.Item1},{vec.Item2})"); // 3 walls?? Check with another level I guess
+				x += vec.Item1;
+				y += vec.Item2;
 
-				if (level.tiles.InBounds(x, y) && level.tiles[x, y].roomId == tile.roomId)
+				if (level.tiles.InBounds(x, y) && level.tiles[x, y].IsValid(tile.roomId))
 				{
-					newLevel.manualWalls.Add(new() { direction = dir, position = new(x, y) }); // converts to int which is equal to the PlusDirection
-					level.tiles[x, y].walls = level.tiles[x, y].walls.ToggleBit((int)dir);
+                    Console.WriteLine($"Marked wall at ({tile.position.x},{tile.position.y}) as placed in dir: {dir}");
+					newLevel.manualWalls.Add(new() { direction = dir, position = new(tile.position.x, tile.position.y) }); // converts to int which is equal to the PlusDirection
+					level.tiles[tile.position.x, tile.position.y].walls = level.tiles[tile.position.x, tile.position.y].walls.ToggleBit((int)dir);
 				}
 			}
 		}
 
+
 		Console.WriteLine("Initializing elevator areas...");
 
 		foreach (var elevator in level.elevators)
+		{
+            Console.WriteLine($"Added elevator at ({elevator.position.x},{elevator.position.y}) at direction {elevator.direction}");
 			newLevel.elevatorAreas.Add(new(elevator.position, 1, elevator.direction.ToStandard()), elevator);
+		}
 
 
 		Console.WriteLine("Initializing general areas...");
 		// Area detection algorithm here
 		bool[,] accessedTiles = new bool[level.tiles.GetLength(0), level.tiles.GetLength(1)];
+		int ogX = 0;
+		int ogY = 0;
+
 		while (true)
 		{
-			int ogX = 0;
-			int ogY = 0;
+			
 			int id = -1;
 			bool flag = false;
 
+			//Console.WriteLine("\nStarting new iteration\n");
+
 			for (; ogX < level.tiles.GetLength(0); ogX++)
 			{
-				for (; ogY < level.tiles.GetLength(1); ogY++)
+				for (ogY = 0; ogY < level.tiles.GetLength(1); ogY++)
 				{
+					//Console.WriteLine("Checking for id: " + level.tiles[ogX, ogY].roomId + " of type: " + level.tiles[ogX, ogY].type + $" at pos: ({ogX},{ogY}) of boolean: "+ accessedTiles[ogX, ogY]);
 					if (level.tiles[ogX, ogY].IsValid() && !accessedTiles[ogX, ogY])
-					{
-						id = level.tiles[ogX, ogY].roomId;
+					{                        
+						id = level.tiles[ogX, ogY].roomId; // First get an available tile to begin an area search on
 						accessedTiles[ogX, ogY] = true;
+						//Console.WriteLine("-- Detected for id: " + id + " of type: " + level.tiles[ogX, ogY].type + $" at pos: ({ogX},{ogY})");
 						flag = true;
 						break;
 					}
@@ -98,28 +106,53 @@ internal static class Converters
 				break;
 
 			int bigY = 0;
+			int y;
 
-			for (int y = ogY; y < level.tiles.GetLength(1); y++)
+			for (y = ogY + 1; y < level.tiles.GetLength(1); y++)
 			{
-				if (!accessedTiles[ogX, ogY] && level.tiles[ogX, y].IsValid(id))
+				//Console.WriteLine("Checking for id: " + level.tiles[ogX, y].roomId + " of type: " + level.tiles[ogX, y].type + $" at pos: ({ogX},{y})");
+				if (!accessedTiles[ogX, y] && level.tiles[ogX, y].IsValid(id))
 				{
 					bigY = y;
-					accessedTiles[ogX, ogY] = true;
+					accessedTiles[ogX, y] = true; // Get the highest height of that area to expand
 				}
-				else break;	
+				else
+				{
+                    //Console.WriteLine("Broke on y: " + y);
+					break;
+				}
 			}
+
+			//Console.WriteLine("Created bigY of " + bigY);
 
 			if (bigY < ogY)
 				continue; // Just to be sure..
-			
 
-			for (int x = ogX; x < level.tiles.GetLength(0); x++)
+			int x = ogX + 1;
+			flag = false;
+
+			//Console.WriteLine("Starting y at " + (y + 1) + " with x: " + x);
+
+			for (; x < level.tiles.GetLength(0); x++)
 			{
-				for (int y = ogY; y < bigY; y++)
+				for (y = ogY; y < bigY; y++)
 				{
+					//Console.WriteLine("Checking for id: " + level.tiles[x, y].roomId + " of type: " + level.tiles[x, y].type);
 
+					if (!accessedTiles[x, y] && level.tiles[x, y].IsValid(id)) // Just fill up the area
+						accessedTiles[x, y] = true;
+					else
+					{
+						// If an invalid wall was detected, it means the size has been reached
+						flag = true;
+						break;
+					}
 				}
+				if (flag) break;
 			}
+			var size = new ByteVector2(x - ogX, 1 + bigY - ogY);
+			newLevel.areas.Add(new AreaData(new(ogX, ogY), size, (ushort)id));
+			Console.WriteLine($"Area {newLevel.areas.Count} created with size: ({size.x},{size.y}) at pos: ({ogX},{ogY})");
 
 		}
 
@@ -133,19 +166,19 @@ internal static class Converters
 	static List<PlusDirection> DirsFromTile(this PlusLevelFormat.Tile t)
 	{
 		List<PlusDirection> list = [];
-		for (int i = 0; i < 4; i++)
-			if ((t.type & (1 << i)) > 0)
+		for (int i = 1; i <= 4; i++)
+			if (IsBitSet(t.walls, i))
 				list.Add((PlusDirection)i);
 
 		return list;
 	}
 
-	static ByteVector2 ToByteVector2(this PlusDirection dir) => dir switch
+	static (int, int) ToByteVector2(this PlusDirection dir) => dir switch
 	{
-		PlusDirection.North => new(0, 1),
-		PlusDirection.West => new(-1, 0),
-		PlusDirection.East => new(1, 0),
-		PlusDirection.South => new(0, -1),
+		PlusDirection.North => (0, 1),
+		PlusDirection.West => (-1, 0),
+		PlusDirection.East => (1, 0),
+		PlusDirection.South => (0, -1),
 		_ => new(0, 0)
 	};
 
@@ -160,4 +193,11 @@ internal static class Converters
 		// Use XOR to flip the bit at the specified position
 		return new(flag ^ (1 << position));
 	}
+
+	static bool IsBitSet(Nybble flag, int position) // Thanks ChatGPT
+	{
+		// Check if the bit at the specified position is set (1)
+		return (flag & (1 << position)) != 0;
+	}
+
 }
