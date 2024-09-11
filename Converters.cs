@@ -72,12 +72,12 @@ internal static class Converters
 		Console.WriteLine("Initializing general areas...");
 		// Area detection algorithm here
 		bool[,] accessedTiles = new bool[level.tiles.GetLength(0), level.tiles.GetLength(1)];
-		int ogX = 0;
-		int ogY = 0;
+		
 
 		while (true)
 		{
-			
+			int ogX = 0;
+			int ogY = 0;
 			int id = -1;
 			bool flag = false;
 
@@ -105,7 +105,7 @@ internal static class Converters
 			if (id == -1) // First phase done
 				break;
 
-			int bigY = 0;
+			int bigY = ogY; // Default is size of 1
 			int y;
 
 			for (y = ogY + 1; y < level.tiles.GetLength(1); y++)
@@ -118,30 +118,24 @@ internal static class Converters
 				}
 				else
 				{
-                    //Console.WriteLine("Broke on y: " + y);
+                  //Console.WriteLine("Broke on y: " + y);
 					break;
 				}
 			}
 
 			//Console.WriteLine("Created bigY of " + bigY);
 
-			if (bigY < ogY)
-				continue; // Just to be sure..
-
 			int x = ogX + 1;
 			flag = false;
 
-			//Console.WriteLine("Starting y at " + (y + 1) + " with x: " + x);
 
 			for (; x < level.tiles.GetLength(0); x++)
 			{
-				for (y = ogY; y < bigY; y++)
+				for (y = ogY; y <= bigY; y++)
 				{
-					//Console.WriteLine("Checking for id: " + level.tiles[x, y].roomId + " of type: " + level.tiles[x, y].type);
+					//Console.WriteLine("Checking for id: " + level.tiles[x, y].roomId + " of type: " + level.tiles[x, y].type + $" at pos: ({x},{y})");
 
-					if (!accessedTiles[x, y] && level.tiles[x, y].IsValid(id)) // Just fill up the area
-						accessedTiles[x, y] = true;
-					else
+					if (accessedTiles[x, y] || !level.tiles[x, y].IsValid(id)) // Just fill up the area
 					{
 						// If an invalid wall was detected, it means the size has been reached
 						flag = true;
@@ -150,9 +144,21 @@ internal static class Converters
 				}
 				if (flag) break;
 			}
+
 			var size = new ByteVector2(x - ogX, 1 + bigY - ogY);
 			newLevel.areas.Add(new AreaData(new(ogX, ogY), size, (ushort)id));
 			Console.WriteLine($"Area {newLevel.areas.Count} created with size: ({size.x},{size.y}) at pos: ({ogX},{ogY})");
+
+			size = new(size.x + ogX, size.y + ogY); // Update to the actual position
+
+			for (int x2 = ogX; x2 < size.x; x2++)
+			{
+				for (int y2 = ogY; y2 < size.y; y2++)
+				{
+					if (accessedTiles.InBounds(x2, y2))
+						accessedTiles[x2, y2] = true;
+				}
+			}
 
 		}
 
