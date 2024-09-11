@@ -68,7 +68,6 @@ static class BLDConverter
 				Console.BackgroundColor = ConsoleColor.Red;
 				Console.WriteLine($"Failed to load file ({file}). Please, make sure the file you\'re using is not corrupted or contain invalid data.");
 				Console.WriteLine($"Printing exception...\n{e}");
-				return;
 			}
 		}
 
