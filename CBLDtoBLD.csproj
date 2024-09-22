@@ -7,8 +7,8 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Description>Converts a .cbld file to .bld file from Baldi Plus Level Editor</Description>
-    <FileVersion>1.0.1.0</FileVersion>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.1</FileVersion>
+    <AssemblyVersion>1.0.1.1</AssemblyVersion>
     <PackageIcon></PackageIcon>
     <ApplicationIcon>cbldtobld.ico</ApplicationIcon>
   </PropertyGroup>

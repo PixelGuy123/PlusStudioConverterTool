@@ -41,6 +41,7 @@ internal static class Converters
 		{
 			int x = tile.position.x;
 			int y = tile.position.y;
+			//Console.WriteLine($"Checking wall position at ({x},{y}), is it InBounds? {level.tiles.InBounds(x, y)}");
 			if (!level.tiles.InBounds(x, y) || !level.tiles[x, y].IsValid()) continue;
 
 			foreach (var dir in tile.DirsFromTile())
@@ -56,6 +57,9 @@ internal static class Converters
 					newLevel.manualWalls.Add(new() { direction = dir, position = new(tile.position.x, tile.position.y) }); // converts to int which is equal to the PlusDirection
 					level.tiles[tile.position.x, tile.position.y].walls = level.tiles[tile.position.x, tile.position.y].walls.ToggleBit((int)dir);
 				}
+
+				x = tile.position.x;
+				y = tile.position.y;
 			}
 		}
 
