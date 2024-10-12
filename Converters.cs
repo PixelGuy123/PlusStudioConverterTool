@@ -4,8 +4,6 @@ using PlusLevelLoader;
 
 namespace CBLDtoBLD;
 
-using Console = System.Console;
-
 internal static class Converters
 {
 	public static EditorLevel ConvertToEditor(this Level level)
