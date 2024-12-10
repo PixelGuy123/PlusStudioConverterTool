@@ -8,7 +8,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Description>Converts a .cbld file to .bld file from Baldi Plus Level Editor</Description>
     <FileVersion>1.0.1.1</FileVersion>
-    <AssemblyVersion>1.0.1.1</AssemblyVersion>
+    <AssemblyVersion>1.0.2</AssemblyVersion>
     <PackageIcon></PackageIcon>
     <ApplicationIcon>cbldtobld.ico</ApplicationIcon>
   </PropertyGroup>
@@ -26,12 +26,14 @@
 	 <Reference Include="BaldiLevelEditor">
 	 <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\FullyAccessibleEditor\BaldiLevelEditor.dll</HintPath>
 	 </Reference>
-    <Reference Include="PlusLevelFormat">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\plugins\editor\PlusLevelFormat.dll</HintPath>
-    </Reference>
-    <Reference Include="PlusLevelLoader">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\plugins\editor\PlusLevelLoader.dll</HintPath>
-    </Reference>
+	 
+	 <Reference Include="PlusLevelFormat">
+	   <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\editor\PlusLevelFormat.dll</HintPath>
+	 </Reference>
+	 
+	 <Reference Include="PlusLevelLoader">
+	   <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\editor\PlusLevelLoader.dll</HintPath>
+	 </Reference>
     
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BALDI_Data\Managed\UnityEngine.CoreModule.dll</HintPath>

@@ -13,9 +13,9 @@ internal static class Converters
 			blockedWalls = level.blockedWalls,
 			buttons = level.buttons,
 			doors = level.doors,
-			elevators = level.elevators,
 			entitySafeTiles = level.entitySafeTiles,
 			eventSafeTiles = level.eventSafeTiles,
+			exits = level.exits,
 			rooms = level.rooms,
 			npcSpawns = level.npcSpawns,
 			tiledPrefabs = level.tiledPrefabs,
@@ -64,9 +64,9 @@ internal static class Converters
 
 		Console.WriteLine("Initializing elevator areas...");
 
-		foreach (var elevator in level.elevators)
+		foreach (var elevator in level.exits)
 		{
-            Console.WriteLine($"Added elevator at ({elevator.position.x},{elevator.position.y}) at direction {elevator.direction}");
+			Console.WriteLine($"Added elevator at ({elevator.position.x},{elevator.position.y}) at direction {elevator.direction}");
 			newLevel.elevatorAreas.Add(new(elevator.position, 1, elevator.direction.ToStandard()), elevator);
 		}
 
