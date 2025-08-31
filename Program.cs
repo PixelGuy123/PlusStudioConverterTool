@@ -1,88 +1,78 @@
-﻿using PlusLevelFormat;
-using System.Diagnostics;
+﻿using CBLDtoBLD.Services;
 
-namespace CBLDtoBLD;
-
-using Console = System.Console;
-
-static class BLDConverter
+namespace CBLDtoBLD
 {
-	static void Main(string[] args)
-	{		
-		if (args.Length == 0)
+	internal static class Program
+	{
+		private static void Main(string[] args)
 		{
-			Console.WriteLine("Please, input the path to the .CBLD file you want to convert.");
-			while (args.Length == 0)
+		start:
+			Console.Clear();
+			Console.WriteLine(@"
+██████╗ ██╗     ██╗   ██╗███████╗    ███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗      ██████╗████████╗
+██╔══██╗██║     ██║   ██║██╔════╝    ██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗    ██╔════╝╚══██╔══╝
+██████╔╝██║     ██║   ██║███████╗    ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║    ██║        ██║   
+██╔═══╝ ██║     ██║   ██║╚════██║    ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║    ██║        ██║   
+██║     ███████╗╚██████╔╝███████║    ███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝    ╚██████╗   ██║   
+╚═╝     ╚══════╝ ╚═════╝ ╚══════╝    ╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝      ╚═════╝   ╚═╝                                                                                                                                                                                                                                                                                                            
+			");
+
+			Console.WriteLine("Plus Studio Converter Tool. Made by PixelGuy. v2.0.0");
+			Console.WriteLine("Plus Level Editor and Plus Level Studio were made by MissingTextureMan101.");
+			Console.WriteLine();
+
+			// 1) Get the right action from user
+			List<string>? inputs = null;
+			if (args.Length != 0) // If the files were carried within the program, it'll detect it earlier
 			{
-				string? input = Console.ReadLine();
-				if (!string.IsNullOrEmpty(input) && ValidFile(input))
-					args = [input];
-				else
+				inputs = ArgsProcessor.GetInputPaths(TargetType.Null, args);
+				foreach (var input in inputs)
+					ConsoleHelper.LogInfo($"Retrieved file: {Path.GetFileName(input)}");
+				Console.WriteLine("Looks like you\'ve got some files already! Select the following converter to proceed with the carried content.");
+			}
+			var optionTuple = ConsoleHelper.RetrieveUserSelection("Here\'s a list of the available modes in this tool.",
+				"CBLDtoBLD Converter.",
+				"BLDtoEBPL Converter"
+				);
+			Console.Clear();
+			Console.WriteLine($"Selected mode: {optionTuple.Item2}");
+			TargetType type = (TargetType)optionTuple.Item1;
+			string typeExt = type.ToExtension();
+
+			// 1 - CBLDtoBLD
+			// 2 - BLDtoBPL
+			if (inputs == null)
+				inputs = ArgsProcessor.GetInputPaths(type, args);
+			else
+			{   // remove all the inputs that don't match the required files
+				for (int i = 0; i < inputs.Count; i++)
 				{
-					Console.Clear();
-					Console.WriteLine("Please, input the path to the .CBLD file you want to convert.");
+					var input = inputs[i];
+					var inputExt = Path.GetExtension(inputs[i]);
+					if (!string.Equals(inputExt, typeExt, StringComparison.OrdinalIgnoreCase))
+					{
+						inputs.RemoveAt(i--);
+						ConsoleHelper.LogWarn($"Removed {Path.GetFileName(input)} for not being of extension {typeExt}.");
+					}
 				}
 			}
+
+			var files = FileEnumerator.ExpandToNewFiles(inputs, type);
+			if (files.Count == 0)
+			{
+				ConsoleHelper.LogError($"No {type.ToExtension()} files found to convert. Exiting.");
+				goto exit;
+			}
+			var exportFolder = ConsoleHelper.PromptForExportFolder();
+			ConverterService.ConvertFiles(files, exportFolder, type);
+
+		exit:
+
+			if (ConsoleHelper.CheckIfUserInputsYOrN("Restart the tool?"))
+				goto start;
+
+			Console.WriteLine("====\nPress any key to quit...");
+			Console.ReadKey(true);
 		}
-		Console.Clear();
-		for (int i = 0; i < args.Length; i++)
-		{
-			string file = args[i];
-			Console.WriteLine($"== Loading file: {Path.GetFileName(file)} ==\n");
-			
-
-			if (!ValidFile(file))
-			{
-				LogAtColor(ConsoleColor.Red, $"Invalid file detected ({file}). Please input a .cbld file next time.");
-				continue;
-			}
-			file = Path.GetFullPath(file);
-			
-			Stopwatch w = Stopwatch.StartNew();
-			try
-			{
-				Console.WriteLine("Reading level..");
-				Level level;
-				using (var reader = new BinaryReader(File.OpenRead(file)))
-					level = LevelExtensions.ReadLevel(reader);
-
-
-				Console.WriteLine("Converting level...");
-				var dir = Path.GetDirectoryName(file);
-
-				if (string.IsNullOrEmpty(dir))
-					throw new DirectoryNotFoundException("Directory for the provided path has not been found.");
-
-				string fname = Path.Combine(dir, Path.GetFileNameWithoutExtension(file) + ".bld");
-
-				using (var writer = new BinaryWriter(File.OpenWrite(fname)))
-					level.ConvertToEditor().SaveIntoStream(writer);
-
-
-				w.Stop();
-				LogAtColor(ConsoleColor.Green, $"CBLD file converted as {Path.GetFileName(fname)}");
-				Console.WriteLine("Time taken: " + w.ElapsedMilliseconds + "ms");
-			}
-			catch (Exception e)
-			{
-				Console.BackgroundColor = ConsoleColor.Red;
-				Console.WriteLine($"Failed to load file ({file}). Please, make sure the file you\'re using is not corrupted or contain invalid data.");
-				Console.WriteLine($"Printing exception...\n{e}");
-			}
-		}
-
-		Console.WriteLine("====\nPress any key to quit...");
-		Console.Read();
-	}
-
-	static bool ValidFile(string path) =>
-		File.Exists(path) && Path.GetExtension(path) == ".cbld";
-
-	static void LogAtColor(ConsoleColor color, string content)
-	{
-		var c = Console.BackgroundColor;
-		Console.BackgroundColor = color;
-		Console.WriteLine(content);
-		Console.BackgroundColor = c;
 	}
 }
