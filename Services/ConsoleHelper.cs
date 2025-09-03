@@ -65,11 +65,14 @@ namespace CBLDtoBLD.Services
                 var full = Path.GetFullPath(path.Trim('"'));
                 try
                 {
-                    if (Directory.GetDirectories(full).Length != 0 || Directory.GetFiles(full).Length != 0)
+                    if (Directory.Exists(full) && Directory.EnumerateFileSystemEntries(full).Any()) // If there's anything inside this Directory (as long as it exists)
                     {
                         LogWarn($"The folder you inserted seems to already contain content inside.\nUsing this path as the export folder will automatically delete everything inside this directory.");
                         if (!CheckIfUserInputsYOrN("Are you sure you want to proceed?"))
+                        {
+                            Console.WriteLine("Enter another folder or press or type \'C\' to not set an export folder:");
                             continue; // Goes back once again
+                        }
                         Directory.Delete(full, true); // Deletes the folder, to re-create it
                     }
                     Directory.CreateDirectory(full);

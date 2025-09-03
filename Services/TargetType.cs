@@ -3,23 +3,20 @@ namespace CBLDtoBLD.Services;
 internal enum TargetType
 {
     Null = 0,
-    CBLD = 1,
-    BLD = 2
+    CBLDtoBLD = 1,
+    BLDtoEBPL = 2,
+    CBLDtoRBPL = 3,
+    RBPLtoEBPL = 4
 }
 
 internal static class TargetTypeExtensions
 {
     public static string ToExtension(this TargetType type) => type switch
     {
-        TargetType.BLD => ".bld",
-        TargetType.CBLD => ".cbld",
+        TargetType.BLDtoEBPL => ".bld",
+        TargetType.CBLDtoBLD => ".cbld",
+        TargetType.CBLDtoRBPL => ".cbld",
+        TargetType.RBPLtoEBPL => ".rbpl",
         _ => string.Empty
-    };
-
-    public static TargetType ToTargetType(this string extension) => extension.ToLowerInvariant().Trim('.') switch
-    {
-        "bld" => TargetType.BLD,
-        "cbld" => TargetType.CBLD,
-        _ => TargetType.Null
     };
 }

@@ -1,6 +1,7 @@
-using System.Diagnostics;
 using BaldiLevelEditor;
 using PlusLevelFormat;
+using PlusLevelStudio.Editor;
+using PlusStudioLevelFormat;
 
 namespace CBLDtoBLD.Services
 {
@@ -9,7 +10,7 @@ namespace CBLDtoBLD.Services
         // Convert a list of absolute file paths (.cbld) and optionally export all
         // converted files into exportFolder. If exportFolder is null the converted
         // file is written next to the original file.
-        public static void ConvertFiles(List<string> cbldFiles, string? exportFolder, TargetType fileType)
+        public static void ConvertFiles(List<string> files, string? exportFolder, TargetType fileType)
         {
             string extension = fileType.ToExtension();
             // Get the specific method and settings depending on the options
@@ -17,20 +18,27 @@ namespace CBLDtoBLD.Services
             ConversionSettings? settings = null;
             switch (fileType)
             {
-                case TargetType.CBLD:
+                case TargetType.CBLDtoBLD:
                     action = ConvertCBLDtoBLDFiles;
                     break;
-                case TargetType.BLD:
+                case TargetType.BLDtoEBPL:
                     settings = new BLDtoEBPLSettings(
-                        ConsoleHelper.CheckIfUserInputsYOrN("Should the converter automatically include lighting into the level(s)?")
+                        ConsoleHelper.CheckIfUserInputsYOrN("Should the converter automatically include procedually generated lighting into the level(s)?"),
+                        ConsoleHelper.RetrieveUserSelection("Which editor mode should the converted level(s) use?", "Full", "Compliant").Item2.ToLower()
                     );
                     action = ConvertBLDtoEBPLFiles;
+                    break;
+                case TargetType.CBLDtoRBPL:
+                    action = ConvertCBLDtoRBPLFiles;
+                    break;
+                case TargetType.RBPLtoEBPL:
+                    action = ConvertRBPLtoEBPLFiles;
                     break;
                 default:
                     throw new ArgumentException("Invalid TargetType");
             }
 
-            foreach (var file in cbldFiles)
+            foreach (var file in files)
             {
                 ConsoleHelper.LogInfo($"== Loading file: {Path.GetFileName(file)} ==\n");
 
@@ -40,16 +48,20 @@ namespace CBLDtoBLD.Services
                     continue;
                 }
 
-                try
+                //try
                 {
                     action(file, exportFolder, out string fname, settings);
                 }
-                catch (Exception ex)
-                {
-                    ConsoleHelper.LogError($"Failed to convert file ({file}).");
-                    ConsoleHelper.LogError(ex.ToString());
-                }
+                // catch (Exception ex)
+                // {
+                //     ConsoleHelper.LogError($"Failed to convert file ({file}).");
+                //     ConsoleHelper.LogError(ex.ToString());
+                //     return;
+                // }
             }
+
+            Console.WriteLine("============");
+            ConsoleHelper.LogSuccess($"{files.Count} files were successfully converted!");
         }
 
         private static void ConvertCBLDtoBLDFiles(string file, string? exportFolder, out string fname, ConversionSettings? settings)
@@ -104,13 +116,64 @@ namespace CBLDtoBLD.Services
 
 
             var conversion = level.ConvertBLDtoEBPLFormat(
-                bldSettings.AutoLightFill
+                bldSettings.AutoLightFill,
+                bldSettings.EditorMode
                 );
             // Comes later to prevent creating an empty file
             using var writer = new BinaryWriter(File.OpenWrite(fname));
             conversion.Write(writer);
 
-            ConsoleHelper.LogSuccess($"EBPL file converted to {Path.GetFileName(fname)}");
+            ConsoleHelper.LogSuccess($"BLD file converted to {Path.GetFileName(fname)}");
+        }
+
+        private static void ConvertCBLDtoRBPLFiles(string file, string? exportFolder, out string fname, ConversionSettings? settings)
+        {
+            ConsoleHelper.LogInfo("Reading CBLD level...");
+            Level level;
+            using (var reader = new BinaryReader(File.OpenRead(file)))
+            {
+                level = LevelExtensions.ReadLevel(reader);
+            }
+            var targetDir = string.IsNullOrEmpty(exportFolder) ? Path.GetDirectoryName(file) : exportFolder;
+
+            if (string.IsNullOrEmpty(targetDir))
+                throw new DirectoryNotFoundException("Could not determine target directory for output file.");
+
+            fname = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(file) + ".rbpl");
+
+            var rooms = level.ConvertCBLDtoRBPLFormat();
+            for (int i = 0; i < rooms.Count; i++)
+            {
+                var room = rooms[i];
+                using var writer = new BinaryWriter(File.OpenWrite(fname));
+                fname = GetUniqueFilePath(fname + $"_{room.type}_{i + 1}");
+                room.Write(writer);
+                ConsoleHelper.LogInfo($"Created {Path.GetFileName(fname)} with success!");
+            }
+
+            ConsoleHelper.LogSuccess($"Successfully converted {rooms.Count} rooms into their respective files!");
+        }
+
+        private static void ConvertRBPLtoEBPLFiles(string file, string? exportFolder, out string fname, ConversionSettings? settings)
+        {
+            ConsoleHelper.LogInfo("Reading RBPL level...");
+            BaldiRoomAsset level;
+            using (var reader = new BinaryReader(File.OpenRead(file)))
+            {
+                level = BaldiRoomAsset.Read(reader);
+            }
+            var targetDir = string.IsNullOrEmpty(exportFolder) ? Path.GetDirectoryName(file) : exportFolder;
+
+            if (string.IsNullOrEmpty(targetDir))
+                throw new DirectoryNotFoundException("Could not determine target directory for output file.");
+
+            fname = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(file) + ".ebpl");
+
+            var conversion = level.ConvertRBPLtoEBPLFormat();
+            using var writer = new BinaryWriter(File.OpenWrite(fname));
+            conversion.Write(writer);
+
+            ConsoleHelper.LogSuccess($"RBPL file converted to {Path.GetFileName(fname)}");
         }
 
         // Gets unique file path by doing what Windows does
@@ -135,7 +198,7 @@ namespace CBLDtoBLD.Services
         }
 
         abstract record ConversionSettings { }
-        record BLDtoEBPLSettings(bool AutoLightFill) : ConversionSettings { }
+        record BLDtoEBPLSettings(bool AutoLightFill, string EditorMode) : ConversionSettings { }
         delegate void ConversionMethod(string file, string? exportFolder, out string fname, ConversionSettings? settings);
     }
 }
