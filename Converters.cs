@@ -12,9 +12,12 @@ namespace CBLDtoBLD;
 internal static class Converters
 {
 	#region RBPLtoEBPL
-	public static EditorLevelData ConvertRBPLtoEBPLFormat(this BaldiRoomAsset roomAsset)
+	public static EditorFileContainer ConvertRBPLtoEBPLFormat(this BaldiRoomAsset roomAsset)
 	{
+		var fileContainer = new EditorFileContainer();
 		ConsoleHelper.LogInfo("Converting RBPL room asset to EBPL format...");
+
+		const string editorMode = "rooms";
 
 		// 1. Determine map size from the room's cells to create a fitting canvas.
 		ConsoleHelper.LogConverterInfo("Calculating map size from room cells...");
@@ -45,7 +48,13 @@ internal static class Converters
 
 		// 3. Set up rooms. The hall (ID 1) is created by default. We add our new room, which will get ID 2.
 		ConsoleHelper.LogConverterInfo($"Setting up room of type \'{roomAsset.type}\'..");
-		var newRoom = new EditorRoom(roomAsset.type, new PlusStudioLevelFormat.TextureContainer(roomAsset.textureContainer));
+		var newRoom = new EditorRoom(roomAsset.type, new PlusStudioLevelFormat.TextureContainer()
+		{
+			wall = UpdateOldTextureName(roomAsset.textureContainer.wall),
+			ceiling = UpdateOldTextureName(roomAsset.textureContainer.ceiling),
+			floor = UpdateOldTextureName(roomAsset.textureContainer.floor)
+		});
+
 		newData.rooms.Add(newRoom);
 		ushort newRoomId = newData.IdFromRoom(newRoom);
 
@@ -184,15 +193,15 @@ internal static class Converters
 		ConsoleHelper.LogConverterInfo("Converting technical data from lists into markers...");
 		foreach (var pos in roomAsset.potentialDoorPositions)
 		{
-			newData.structures.Add(new PotentialDoorLocation() { position = pos.ToInt(), type = "potentialdoor" });
+			newData.structures.Add(new PotentialDoorLocation() { position = pos.ToInt(), type = "technical_potentialdoor" });
 		}
 		foreach (var pos in roomAsset.forcedDoorPositions)
 		{
-			newData.structures.Add(new ForcedDoorLocation() { position = pos.ToInt(), type = "forceddoor" });
+			newData.structures.Add(new ForcedDoorLocation() { position = pos.ToInt(), type = "technical_forceddoor" });
 		}
 		foreach (var pos in roomAsset.standardLightCells)
 		{
-			newData.structures.Add(new RoomLightLocation() { position = pos.ToInt(), type = "lightspot" });
+			newData.structures.Add(new RoomLightLocation() { position = pos.ToInt(), type = "technical_lightspot" });
 		}
 		ConsoleHelper.LogConverterInfo($"{roomAsset.potentialDoorPositions.Count} potential door position markers created.");
 		ConsoleHelper.LogConverterInfo($"{roomAsset.forcedDoorPositions.Count} forced door position markers created.");
@@ -208,7 +217,7 @@ internal static class Converters
 			var pos = cell.position.ToInt();
 			if (!entitySafePositions.Contains(pos) && !eventSafePositions.Contains(pos))
 			{
-				newData.structures.Add(new UnsafeCellLocation() { position = pos, type = "nosafe" });
+				newData.structures.Add(new UnsafeCellLocation() { position = pos, type = "technical_nosafe" });
 				counter++;
 			}
 		}
@@ -227,20 +236,20 @@ internal static class Converters
 			switch (obj.prefab)
 			{
 				case "potentialDoorMarker":
-					newData.structures.Add(new PotentialDoorLocation() { position = cellPos, type = "potentialdoor" });
+					newData.structures.Add(new PotentialDoorLocation() { position = cellPos, type = "technical_potentialdoor" });
 					break;
 				case "forcedDoorMarker":
-					newData.structures.Add(new ForcedDoorLocation() { position = cellPos, type = "forceddoor" });
+					newData.structures.Add(new ForcedDoorLocation() { position = cellPos, type = "technical_forceddoor" });
 					break;
 				case "itemSpawnMarker":
 					// This marker becomes an ItemSpawnPlacement, not a structure, with a default weight.
 					newData.itemSpawns.Add(new ItemSpawnPlacement() { weight = 100, position = new Vector2(objPos.x, objPos.z) });
 					break;
 				case "nonSafeCellMarker":
-					newData.structures.Add(new UnsafeCellLocation() { position = cellPos, type = "nosafe" });
+					newData.structures.Add(new UnsafeCellLocation() { position = cellPos, type = "technical_nosafe" });
 					break;
 				case "lightSpotMarker":
-					newData.structures.Add(new RoomLightLocation() { position = cellPos, type = "lightspot" });
+					newData.structures.Add(new RoomLightLocation() { position = cellPos, type = "technical_lightspot" });
 					break;
 				default:
 					isMarker = false;
@@ -252,7 +261,7 @@ internal static class Converters
 				// This is a regular object, so add it to the objects list.
 				newData.objects.Add(new BasicObjectLocation()
 				{
-					prefab = obj.prefab,
+					prefab = UpdateOldObjectNames(obj.prefab),
 					position = objPos,
 					rotation = new Quaternion(obj.rotation.x, obj.rotation.y, obj.rotation.z, obj.rotation.w)
 				});
@@ -266,7 +275,21 @@ internal static class Converters
 			ConsoleHelper.LogConverterInfo($"{counter} objects were detected as legacy markers and were properly replaced.");
 		ConsoleHelper.LogInfo("Conversion completed!");
 
-		return newData;
+		// file container meta stuff
+		string[] toolBars = new string[9];
+		for (int i = 0; i < toolBars.Length; i++)
+			toolBars[i] = string.Empty;
+
+		fileContainer.meta = new()
+		{
+			cameraPosition = Vector3.zero,
+			cameraRotation = Quaternion.identity,
+			editorMode = editorMode,
+			toolbarTools = toolBars
+		};
+		fileContainer.data = newData;
+
+		return fileContainer;
 	}
 	#endregion
 	#region BLDTOEBPL
@@ -474,29 +497,6 @@ internal static class Converters
 			cameraRotation = Quaternion.identity,
 			editorMode = editorMode,
 			toolbarTools = toolBars
-		};
-
-		// ********** INTERNAL METHODS TO CHANGE SOME STRINGS
-		static string UpdateOldDoorName(string door) => door switch
-		{
-			"swing" => "swinging",
-			"swingsilent" => "swinging_silent",
-			"coin" => "coinswinging",
-			_ => door
-		};
-
-		static string UpdateOldTextureName(string texName) => texName switch
-		{
-			"FacultyWall" => "WallWithMolding",
-			"Actual" => "TileFloor",
-			_ => texName
-		};
-
-		static string UpdateOldObjectNames(string obj) => obj switch
-		{
-			"examination" => "examinationtable",
-			"cabinettall" => "cabinet",
-			_ => obj
 		};
 
 		// ****** Extra *******
@@ -907,6 +907,28 @@ internal static class Converters
 	}
 
 	#endregion
+
+	static string UpdateOldObjectNames(string obj) => obj switch
+	{
+		"examination" => "examinationtable",
+		"cabinettall" => "cabinet",
+		_ => obj
+	};
+
+	static string UpdateOldDoorName(string door) => door switch
+	{
+		"swing" => "swinging",
+		"swingsilent" => "swinging_silent",
+		"coin" => "coinswinging",
+		_ => door
+	};
+
+	static string UpdateOldTextureName(string texName) => texName switch
+	{
+		"FacultyWall" => "WallWithMolding",
+		"Actual" => "TileFloor",
+		_ => texName
+	};
 
 	static List<PlusLevelFormat.PlusDirection> DirsFromTile(this PlusLevelFormat.Tile t)
 	{

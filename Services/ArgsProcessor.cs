@@ -62,7 +62,7 @@ namespace CBLDtoBLD.Services
                 }
                 else if (File.Exists(fullPath))
                 {
-                    if (string.Equals(Path.GetExtension(fullPath), expectedExtension, StringComparison.OrdinalIgnoreCase))
+                    if (string.IsNullOrEmpty(expectedExtension) || string.Equals(Path.GetExtension(fullPath), expectedExtension, StringComparison.OrdinalIgnoreCase))
                         results.Add(fullPath);
                     else
                         ConsoleHelper.LogWarn($"File '{fullPath}' does not match expected extension '{expectedExtension}', skipping.");
