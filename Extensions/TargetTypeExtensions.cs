@@ -1,13 +1,6 @@
-namespace CBLDtoBLD.Services;
+using PlusStudioConverterTool.Models;
 
-internal enum TargetType
-{
-    Null = 0,
-    CBLDtoBLD = 1,
-    BLDtoEBPL = 2,
-    CBLDtoRBPL = 3,
-    RBPLtoEBPL = 4
-}
+namespace PlusStudioConverterTool.Extensions;
 
 internal static class TargetTypeExtensions
 {

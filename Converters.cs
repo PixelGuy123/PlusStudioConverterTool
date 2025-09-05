@@ -1,13 +1,15 @@
-﻿using BaldiLevelEditor;
-using CBLDtoBLD.Services;
+﻿using System.Collections.Generic;
+using BaldiLevelEditor;
 using PlusLevelFormat;
 using PlusLevelLoader;
 using PlusLevelStudio;
 using PlusLevelStudio.Editor;
+using PlusStudioConverterTool.Models;
+using PlusStudioConverterTool.Services;
 using PlusStudioLevelFormat;
 using UnityEngine;
 
-namespace CBLDtoBLD;
+namespace PlusStudioConverterTool;
 
 internal static class Converters
 {
@@ -50,10 +52,13 @@ internal static class Converters
 		ConsoleHelper.LogConverterInfo($"Setting up room of type \'{roomAsset.type}\'..");
 		var newRoom = new EditorRoom(roomAsset.type, new PlusStudioLevelFormat.TextureContainer()
 		{
-			wall = UpdateOldTextureName(roomAsset.textureContainer.wall),
-			ceiling = UpdateOldTextureName(roomAsset.textureContainer.ceiling),
-			floor = UpdateOldTextureName(roomAsset.textureContainer.floor)
+			wall = roomAsset.textureContainer.wall,
+			ceiling = roomAsset.textureContainer.ceiling,
+			floor = roomAsset.textureContainer.floor
 		});
+		UpdateOldAssetName(ref roomAsset.textureContainer.wall, LevelFieldType.RoomTexture);
+		UpdateOldAssetName(ref roomAsset.textureContainer.ceiling, LevelFieldType.RoomTexture);
+		UpdateOldAssetName(ref roomAsset.textureContainer.floor, LevelFieldType.RoomTexture);
 
 		newData.rooms.Add(newRoom);
 		ushort newRoomId = newData.IdFromRoom(newRoom);
@@ -62,13 +67,18 @@ internal static class Converters
 		if (roomAsset.activity != null)
 		{
 			ConsoleHelper.LogConverterInfo($"Adding activity: {roomAsset.activity.type}");
-			var activity = new ActivityLocation()
+			// Only add activity if its asset name is valid after updates
+			string renamedNameAct = roomAsset.activity.type;
+			if (UpdateOldAssetName(ref renamedNameAct, LevelFieldType.Activity))
 			{
-				type = roomAsset.activity.type,
-				position = new Vector3(roomAsset.activity.position.x, roomAsset.activity.position.y, roomAsset.activity.position.z),
-				direction = (Direction)roomAsset.activity.direction
-			};
-			activity.Setup(newRoom); // Assigns the activity to the room.
+				var activity = new ActivityLocation()
+				{
+					type = renamedNameAct,
+					position = new Vector3(roomAsset.activity.position.x, roomAsset.activity.position.y, roomAsset.activity.position.z),
+					direction = (Direction)roomAsset.activity.direction
+				};
+				activity.Setup(newRoom); // Assigns the activity to the room.
+			}
 		}
 
 		// 5. Create efficient CellAreas using a greedy rectangular decomposition algorithm.
@@ -166,12 +176,17 @@ internal static class Converters
 		ConsoleHelper.LogConverterInfo("Converting items...");
 		foreach (var item in roomAsset.items)
 		{
-			newData.items.Add(new ItemPlacement() { item = item.item, position = new Vector2(item.position.x, item.position.y) });
+			string renamedItem = item.item;
+			if (UpdateOldAssetName(ref renamedItem, LevelFieldType.Item))
+			{
+				newData.items.Add(new ItemPlacement() { item = renamedItem, position = new Vector2(item.position.x, item.position.y) });
+			}
 		}
 		ConsoleHelper.LogConverterInfo($"{newData.items.Count} items created.");
 		ConsoleHelper.LogConverterInfo("Converting item spawns...");
 		foreach (var spawn in roomAsset.itemSpawns)
 		{
+			// Item spawns don't reference asset names directly, so keep them
 			newData.itemSpawns.Add(new ItemSpawnPlacement() { weight = spawn.weight, position = new Vector2(spawn.position.x, spawn.position.y) });
 		}
 		ConsoleHelper.LogConverterInfo($"{newData.itemSpawns.Count} item spawns created.");
@@ -179,13 +194,21 @@ internal static class Converters
 		foreach (var light in roomAsset.lights)
 		{
 			// All lights from a room asset are assigned to the default light group (0).
-			newData.lights.Add(new LightPlacement() { type = light.prefab, position = light.position.ToInt(), lightGroup = 0 });
+			string renamedLight = light.prefab;
+			if (UpdateOldAssetName(ref renamedLight, LevelFieldType.Light))
+			{
+				newData.lights.Add(new LightPlacement() { type = renamedLight, position = light.position.ToInt(), lightGroup = 0 });
+			}
 		}
 		ConsoleHelper.LogConverterInfo($"{newData.lights.Count} light objects created.");
 		ConsoleHelper.LogConverterInfo("Converting posters...");
 		foreach (var poster in roomAsset.posters)
 		{
-			newData.posters.Add(new PosterPlacement() { type = poster.poster, position = poster.position.ToInt(), direction = (Direction)poster.direction });
+			string renamedPoster = poster.poster;
+			if (UpdateOldAssetName(ref renamedPoster, LevelFieldType.Poster))
+			{
+				newData.posters.Add(new PosterPlacement() { type = renamedPoster, position = poster.position.ToInt(), direction = (Direction)poster.direction });
+			}
 		}
 		ConsoleHelper.LogConverterInfo($"{newData.posters.Count} posters created.");
 
@@ -258,13 +281,17 @@ internal static class Converters
 
 			if (!isMarker)
 			{
-				// This is a regular object, so add it to the objects list.
-				newData.objects.Add(new BasicObjectLocation()
+				// This is a regular object, so add it to the objects list only if the prefab is allowed
+				string renamedObj = obj.prefab;
+				if (UpdateOldAssetName(ref renamedObj, LevelFieldType.Object))
 				{
-					prefab = UpdateOldObjectNames(obj.prefab),
-					position = objPos,
-					rotation = new Quaternion(obj.rotation.x, obj.rotation.y, obj.rotation.z, obj.rotation.w)
-				});
+					newData.objects.Add(new BasicObjectLocation()
+					{
+						prefab = renamedObj,
+						position = objPos,
+						rotation = new Quaternion(obj.rotation.x, obj.rotation.y, obj.rotation.z, obj.rotation.w)
+					});
+				}
 			}
 			else counter++;
 		}
@@ -330,10 +357,18 @@ internal static class Converters
 		newData.rooms.Clear();
 		foreach (var oldRoom in level.rooms)
 		{
+			// EditorRoom textures may be kept even if the filter would exclude them. Use ref to satisfy signature but ignore return value.
+			string renamedFloor = oldRoom.textures.floor;
+			string renamedWall = oldRoom.textures.wall;
+			string renamedCeiling = oldRoom.textures.ceiling;
+			UpdateOldAssetName(ref renamedFloor, LevelFieldType.RoomTexture);
+			UpdateOldAssetName(ref renamedWall, LevelFieldType.RoomTexture);
+			UpdateOldAssetName(ref renamedCeiling, LevelFieldType.RoomTexture);
+
 			var newRoom = new EditorRoom(oldRoom.type, new PlusStudioLevelFormat.TextureContainer(
-				UpdateOldTextureName(oldRoom.textures.floor),
-				UpdateOldTextureName(oldRoom.textures.wall),
-				UpdateOldTextureName(oldRoom.textures.ceiling)
+				renamedFloor,
+				renamedWall,
+				renamedCeiling
 				));
 			newRoom.activity = oldRoom.activity == null ? null : new()
 			{
@@ -349,7 +384,7 @@ internal static class Converters
 		// 5. Convert areas.
 		ConsoleHelper.LogConverterInfo("Converting BLD to EBPL areas...");
 		newData.areas.Clear();
-		List<RectCellArea> newCellAreas = [];
+		List<RectCellArea> newCellAreas = new List<RectCellArea>();
 		foreach (var oldArea in level.areas)
 		{
 			if (oldArea is AreaData areaData)
@@ -372,12 +407,16 @@ internal static class Converters
 		ConsoleHelper.LogConverterInfo("Converting doors...");
 		foreach (var oldDoor in level.doors)
 		{
-			newData.doors.Add(new PlusLevelStudio.Editor.DoorLocation()
+			string renamedDoor = oldDoor.type;
+			if (UpdateOldAssetName(ref renamedDoor, LevelFieldType.Door))
 			{
-				type = UpdateOldDoorName(oldDoor.type),
-				position = new IntVector2(oldDoor.position.x, oldDoor.position.y),
-				direction = (Direction)oldDoor.direction
-			});
+				newData.doors.Add(new PlusLevelStudio.Editor.DoorLocation()
+				{
+					type = renamedDoor,
+					position = new IntVector2(oldDoor.position.x, oldDoor.position.y),
+					direction = (Direction)oldDoor.direction
+				});
+			}
 		}
 		ConsoleHelper.LogConverterInfo($"{newData.doors.Count} doors loaded in total!");
 
@@ -386,12 +425,16 @@ internal static class Converters
 		ConsoleHelper.LogConverterInfo("Converting windows...");
 		foreach (var oldWindow in level.windows)
 		{
-			newData.windows.Add(new PlusLevelStudio.Editor.WindowLocation()
+			string renamedWindow = oldWindow.type;
+			if (UpdateOldAssetName(ref renamedWindow, LevelFieldType.Window))
 			{
-				type = oldWindow.type,
-				position = new IntVector2(oldWindow.position.x, oldWindow.position.y),
-				direction = (Direction)oldWindow.direction
-			});
+				newData.windows.Add(new PlusLevelStudio.Editor.WindowLocation()
+				{
+					type = renamedWindow,
+					position = new IntVector2(oldWindow.position.x, oldWindow.position.y),
+					direction = (Direction)oldWindow.direction
+				});
+			}
 		}
 		ConsoleHelper.LogConverterInfo($"{newData.windows.Count} windows loaded in total!");
 
@@ -414,12 +457,16 @@ internal static class Converters
 		ConsoleHelper.LogConverterInfo("Converting world objects...");
 		foreach (var oldPrefab in level.prefabs)
 		{
-			newData.objects.Add(new BasicObjectLocation()
+			string renamedPrefab = oldPrefab.prefab;
+			if (UpdateOldAssetName(ref renamedPrefab, LevelFieldType.Object))
 			{
-				prefab = UpdateOldObjectNames(oldPrefab.prefab),
-				position = new Vector3(oldPrefab.position.x, oldPrefab.position.y, oldPrefab.position.z),
-				rotation = new Quaternion(oldPrefab.rotation.x, oldPrefab.rotation.y, oldPrefab.rotation.z, oldPrefab.rotation.w)
-			});
+				newData.objects.Add(new BasicObjectLocation()
+				{
+					prefab = renamedPrefab,
+					position = new Vector3(oldPrefab.position.x, oldPrefab.position.y, oldPrefab.position.z),
+					rotation = new Quaternion(oldPrefab.rotation.x, oldPrefab.rotation.y, oldPrefab.rotation.z, oldPrefab.rotation.w)
+				});
+			}
 		}
 		ConsoleHelper.LogConverterInfo($"{newData.objects.Count} objects loaded in total!");
 
@@ -428,11 +475,15 @@ internal static class Converters
 		ConsoleHelper.LogConverterInfo("Converting items...");
 		foreach (var oldItem in level.items)
 		{
-			newData.items.Add(new ItemPlacement()
+			string renamedItem = oldItem.item;
+			if (UpdateOldAssetName(ref renamedItem, LevelFieldType.Item))
 			{
-				item = oldItem.item,
-				position = new Vector2(oldItem.position.x, oldItem.position.z)
-			});
+				newData.items.Add(new ItemPlacement()
+				{
+					item = renamedItem,
+					position = new Vector2(oldItem.position.x, oldItem.position.z)
+				});
+			}
 		}
 		ConsoleHelper.LogConverterInfo($"{newData.items.Count} items loaded in total!");
 
@@ -442,17 +493,21 @@ internal static class Converters
 		PlusLevelStudio.Editor.ExitLocation? spawnExit = null;
 		foreach (var oldExit in level.exits)
 		{
-			var newExit = new PlusLevelStudio.Editor.ExitLocation()
+			string renamedExit = oldExit.type;
+			if (UpdateOldAssetName(ref renamedExit, LevelFieldType.Exit))
 			{
-				type = oldExit.type,
-				position = new IntVector2(oldExit.position.x, oldExit.position.y),
-				direction = (Direction)oldExit.direction,
-				isSpawn = oldExit.isSpawn
-			};
-			newData.exits.Add(newExit);
-			if (newExit.isSpawn)
-			{
-				spawnExit = newExit; // Track the last found spawn exit
+				var newExit = new PlusLevelStudio.Editor.ExitLocation()
+				{
+					type = renamedExit,
+					position = new IntVector2(oldExit.position.x, oldExit.position.y),
+					direction = (Direction)oldExit.direction,
+					isSpawn = oldExit.isSpawn
+				};
+				newData.exits.Add(newExit);
+				if (newExit.isSpawn)
+				{
+					spawnExit = newExit; // Track the last found spawn exit
+				}
 			}
 		}
 		ConsoleHelper.LogConverterInfo($"{newData.exits.Count} exits loaded in total!");
@@ -476,11 +531,15 @@ internal static class Converters
 		ConsoleHelper.LogConverterInfo("Converting NPCs...");
 		foreach (var oldNpc in level.npcSpawns)
 		{
-			newData.npcs.Add(new NPCPlacement()
+			string renamedNpc = oldNpc.type;
+			if (UpdateOldAssetName(ref renamedNpc, LevelFieldType.NPC))
 			{
-				npc = oldNpc.type,
-				position = new IntVector2(oldNpc.position.x, oldNpc.position.y),
-			});
+				newData.npcs.Add(new NPCPlacement()
+				{
+					npc = renamedNpc,
+					position = new IntVector2(oldNpc.position.x, oldNpc.position.y),
+				});
+			}
 		}
 
 		fileContainer.data = newData;
@@ -908,27 +967,24 @@ internal static class Converters
 
 	#endregion
 
-	static string UpdateOldObjectNames(string obj) => obj switch
+	static bool UpdateOldAssetName(ref string assetName, LevelFieldType lvlFieldType)
 	{
-		"examination" => "examinationtable",
-		"cabinettall" => "cabinet",
-		_ => obj
-	};
-
-	static string UpdateOldDoorName(string door) => door switch
-	{
-		"swing" => "swinging",
-		"swingsilent" => "swinging_silent",
-		"coin" => "coinswinging",
-		_ => door
-	};
-
-	static string UpdateOldTextureName(string texName) => texName switch
-	{
-		"FacultyWall" => "WallWithMolding",
-		"Actual" => "TileFloor",
-		_ => texName
-	};
+		if (ConfigurationHandler.filterKeyPairs.TryGetValue(lvlFieldType, out var filterObj))
+		{
+			if (filterObj.exclusions.Contains(assetName))
+			{
+				ConsoleHelper.LogWarn($"{lvlFieldType}: Removed an asset named '{assetName}'.");
+				return false;
+			}
+			if (filterObj.replacements.TryGetValue(assetName, out var newAssetName))
+			{
+				ConsoleHelper.LogWarn($"{lvlFieldType}: Renamed an asset named '{assetName}' to '{newAssetName}'.");
+				assetName = newAssetName;
+			}
+			return true;
+		}
+		return true;
+	}
 
 	static List<PlusLevelFormat.PlusDirection> DirsFromTile(this PlusLevelFormat.Tile t)
 	{

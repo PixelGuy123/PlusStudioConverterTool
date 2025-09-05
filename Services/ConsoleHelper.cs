@@ -1,4 +1,4 @@
-namespace CBLDtoBLD.Services
+namespace PlusStudioConverterTool.Services
 {
     internal static class ConsoleHelper
     {
@@ -43,6 +43,50 @@ namespace CBLDtoBLD.Services
                 value = Console.ReadLine();
             }
         }
+        // Retrieve an integer
+        public static int RetrieveUserNumber(int min, int max, string? promptMessage = null)
+        {
+            if (min > max || max == 0)
+                throw new ArgumentException("No options were provided for the user\'s selection input.");
+
+            if (!string.IsNullOrEmpty(promptMessage))
+                Console.WriteLine(promptMessage);
+
+            Console.WriteLine($"Select a number between {min} and {max}:");
+            var value = Console.ReadLine();
+
+            while (true)
+            {
+                if (int.TryParse(value, out int option) && option >= min && option <= max)
+                    return option;
+
+                Console.WriteLine($"Select a number between {min} and {max}:");
+                value = Console.ReadLine();
+            }
+        }
+        // Retrieve file path
+        public static string? RetrieveUserFilePath(string expectedExtension, string? promptMessage = null)
+        {
+            if (promptMessage != null)
+                Console.WriteLine(promptMessage);
+            while (true)
+            {
+                var userPath = Console.ReadLine();
+                if (string.Equals(userPath, "C", StringComparison.OrdinalIgnoreCase))
+                    return null;
+                if (string.IsNullOrWhiteSpace(userPath) || Path.GetExtension(userPath) != expectedExtension)
+                {
+                    Console.WriteLine("Please enter a valid file path or type \'C\' to cancel this operation.");
+                    continue;
+                }
+
+                var path = Path.GetFullPath(userPath.Trim('"'));
+                if (File.Exists(path))
+                    return path;
+                else
+                    Console.WriteLine("Please input a path to a file that actually exists or type \'C\' to cancel this operation.");
+            }
+        }
         // Get the export folder for all conversions
         public static string? PromptForExportFolder()
         {
@@ -53,13 +97,13 @@ namespace CBLDtoBLD.Services
             while (true)
             {
                 var path = Console.ReadLine();
+                if (string.Equals(path, "C", StringComparison.OrdinalIgnoreCase))
+                    return null;
                 if (string.IsNullOrWhiteSpace(path))
                 {
                     Console.WriteLine("Please enter a valid folder path or type \'C\' to not set an export folder:");
                     continue;
                 }
-                if (string.Equals(path, "C", StringComparison.OrdinalIgnoreCase))
-                    return null;
 
 
                 var full = Path.GetFullPath(path.Trim('"'));
