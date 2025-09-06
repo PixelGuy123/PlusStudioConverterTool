@@ -224,15 +224,18 @@ namespace PlusStudioConverterTool.Services
                 level.meta,
                 editSettings.EditorMode
                 );
-            // Comes later to prevent creating an empty file
-            using var writer = new BinaryWriter(File.OpenWrite(fname));
-            conversion.Write(writer);
 
-            if (level.meta.contentPackage != null)
+            if (level.meta.contentPackage != null &&
+            level.meta.contentPackage.entries.Exists(entry => entry.data != null) // if there's any entry with actual data in it, then it must be exported
+            )
             {
+                conversion.data.meta.contentPackage = new(true) // Convert the contentPackage to path-only
+                {
+                    entries = level.meta.contentPackage.entries
+                };
                 ConsoleHelper.LogInfo("Extracting PBPL assets and reassigning packages inside EBPL instance...");
                 var fileEntries = ExtractorService.FullPBPLExtraction(level, true, null, targetDir);
-                // Updates every filepath to use its own id
+                // Updates every entry to be filepath-only
                 var entries = conversion.data.meta.contentPackage.entries;
                 if (entries.Count < fileEntries.Count) // If the original entries is lower than what was exported, something is missing and needs to be corrected
                 {
@@ -250,6 +253,10 @@ namespace PlusStudioConverterTool.Services
                 }
                 ConsoleHelper.LogWarn("Reminder: the extracted assets must be moved to their respective folders inside \"Level Studio\\User Content\" in order to export the level properly.");
             }
+
+            // Comes later to prevent creating an empty file
+            using var writer = new BinaryWriter(File.OpenWrite(fname));
+            conversion.Write(writer);
 
             ConsoleHelper.LogSuccess($"PBPL file converted to {Path.GetFileName(fname)}");
         }
