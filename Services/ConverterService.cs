@@ -63,16 +63,16 @@ namespace PlusStudioConverterTool.Services
                     continue;
                 }
 
-                //try
+                try
                 {
                     action(file, exportFolder, out string fname, settings);
                 }
-                // catch (Exception ex)
-                // {
-                //     ConsoleHelper.LogError($"Failed to convert file ({file}).");
-                //     ConsoleHelper.LogError(ex.ToString());
-                //     return;
-                // }
+                catch (Exception ex)
+                {
+                    ConsoleHelper.LogError($"Failed to convert file ({file}).");
+                    ConsoleHelper.LogError(ex.ToString());
+                    return;
+                }
             }
 
             Console.WriteLine("============");
@@ -156,6 +156,9 @@ namespace PlusStudioConverterTool.Services
 
             fname = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(file) + ".rbpl");
 
+            // Ensure we don't overwrite an existing file: pick a unique filename
+            fname = GetUniqueFilePath(fname);
+
             var rooms = level.ConvertCBLDtoRBPLFormat();
             for (int i = 0; i < rooms.Count; i++)
             {
@@ -184,6 +187,9 @@ namespace PlusStudioConverterTool.Services
 
             fname = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(file) + ".ebpl");
 
+            // Ensure we don't overwrite an existing file: pick a unique filename
+            fname = GetUniqueFilePath(fname);
+
             var conversion = level.ConvertRBPLtoEBPLFormat();
             using var writer = new BinaryWriter(File.OpenWrite(fname));
             conversion.Write(writer);
@@ -202,7 +208,7 @@ namespace PlusStudioConverterTool.Services
             PlayableEditorLevel level;
             using (var reader = new BinaryReader(File.OpenRead(file)))
             {
-                level = reader.ReadPlayableLevelWithoutThumbnail();
+                level = reader.ReadPlayableLevelWithoutThumbnail(out _);
             }
             var targetDir = string.IsNullOrEmpty(exportFolder) ? Path.GetDirectoryName(file) : exportFolder;
 

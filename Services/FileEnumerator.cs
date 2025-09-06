@@ -6,7 +6,9 @@ namespace PlusStudioConverterTool.Services
     internal static class FileEnumerator
     {
         public static List<string> ExpandToNewFiles(List<string> inputs, TargetType type, bool logFoundFiles = true) =>
-            InternalExpandToNewFiles(inputs, type.ToExtension(), logFoundFiles);
+            ExpandToNewFiles(inputs, type.ToExtension(), logFoundFiles);
+        public static List<string> ExpandToNewFiles(List<string> inputs, string extension, bool logFoundFiles = true) =>
+            InternalExpandToNewFiles(inputs, extension, logFoundFiles);
 
 
         // Given input paths (files or directories), return a list of absolute paths

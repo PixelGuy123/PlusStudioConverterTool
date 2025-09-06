@@ -8,15 +8,16 @@ namespace PlusStudioConverterTool.Extensions;
 
 internal static class AltLevelLoaderExtensions
 {
-    public static PlayableEditorLevel ReadPlayableLevelWithoutThumbnail(this BinaryReader reader)
+    public static PlayableEditorLevel ReadPlayableLevelWithoutThumbnail(this BinaryReader reader, out byte[]? thumbnailData)
     {
         PlayableEditorLevel playableEditorLevel = new();
+        thumbnailData = null;
         int num;
         if (reader.ReadByte() >= 1)
         {
             num = reader.ReadInt32();
             if (num > 0)
-                _ = reader.ReadBytes(num); // Discard whatever is done here
+                thumbnailData = reader.ReadBytes(num); // Discard whatever is done here
         }
 
         // ** Manually load PlayableLevelMeta to prevent using StudioPlugin

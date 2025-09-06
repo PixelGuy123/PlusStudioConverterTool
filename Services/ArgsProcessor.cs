@@ -8,7 +8,9 @@ namespace PlusStudioConverterTool.Services
         // Returns a list of input paths (files or directories). If args are empty,
         // prompt the user to enter a path or folder.
         public static List<string> GetInputPaths(TargetType type, params string[] args) =>
-            InternalGetInputPaths(args, type.ToExtension());
+            GetInputPaths(type.ToExtension(), args);
+        public static List<string> GetInputPaths(string extension, params string[] args) =>
+            InternalGetInputPaths(args, extension);
         static List<string> InternalGetInputPaths(string[] args, string expectedExtension)
         {
             var results = new List<string>();

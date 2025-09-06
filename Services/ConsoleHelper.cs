@@ -88,20 +88,26 @@ namespace PlusStudioConverterTool.Services
             }
         }
         // Get the export folder for all conversions
-        public static string? PromptForExportFolder()
+        public static string? PromptForExportFolder(bool isRequired, string? promptMessage = null)
         {
-            if (!CheckIfUserInputsYOrN("Do you want to export converted files into a specific folder?"))
+            if (!string.IsNullOrEmpty(promptMessage))
+                Console.WriteLine(promptMessage);
+
+            if (!isRequired && !CheckIfUserInputsYOrN("Do you want to export converted files into a specific folder?"))
                 return null;
+
+            string firstFilePrompt = "Please enter a valid folder path" + (isRequired ? ":" : " or type \'C\' to not set an export folder:");
+            string secondFilePrompt = "Enter another folder or press" + (isRequired ? ":" : " or type \'C\' to not set an export folder:");
 
             Console.WriteLine("Enter the export folder path (will be created if it doesn't exist):");
             while (true)
             {
                 var path = Console.ReadLine();
-                if (string.Equals(path, "C", StringComparison.OrdinalIgnoreCase))
+                if (!isRequired && string.Equals(path, "C", StringComparison.OrdinalIgnoreCase))
                     return null;
                 if (string.IsNullOrWhiteSpace(path))
                 {
-                    Console.WriteLine("Please enter a valid folder path or type \'C\' to not set an export folder:");
+                    Console.WriteLine(firstFilePrompt);
                     continue;
                 }
 
@@ -111,10 +117,10 @@ namespace PlusStudioConverterTool.Services
                 {
                     if (Directory.Exists(full) && Directory.EnumerateFileSystemEntries(full).Any()) // If there's anything inside this Directory (as long as it exists)
                     {
-                        LogWarn($"The folder you inserted seems to already contain content inside.\nUsing this path as the export folder will automatically delete everything inside this directory.");
+                        LogWarn($"The folder you inserted seems to already contain content inside.\nUsing this path as the export folder will automatically delete everything inside this directory.\nIf you don't want to lose information from the folder, MAKE SURE TO BACKUP IT!");
                         if (!CheckIfUserInputsYOrN("Are you sure you want to proceed?"))
                         {
-                            Console.WriteLine("Enter another folder or press or type \'C\' to not set an export folder:");
+                            Console.WriteLine(secondFilePrompt);
                             continue; // Goes back once again
                         }
                         Directory.Delete(full, true); // Deletes the folder, to re-create it
@@ -125,7 +131,7 @@ namespace PlusStudioConverterTool.Services
                 catch (Exception ex)
                 {
                     LogError($"Unable to create, delete or use folder \'{full}\': {ex.Message}");
-                    Console.WriteLine("Enter another folder or press or type \'C\' to not set an export folder:");
+                    Console.WriteLine(secondFilePrompt);
                 }
             }
         }

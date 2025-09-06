@@ -11,6 +11,9 @@ internal static class ConfigurationHandler
     static string configPath = string.Empty;
     // marker
     static bool hasStartedConfigFile = false;
+    // public stuff
+    public static Dictionary<LevelFieldType, FilterObject> filterKeyPairs = [];
+    public static ConfigFile configFile = new();
 
     // Actual handle here
     public static void InitializeConfigFile()
@@ -25,7 +28,7 @@ internal static class ConfigurationHandler
             try
             {
                 var preConfigFile = JsonSerializer.Deserialize(File.ReadAllText(configPath), AppJsonContext.Default.ConfigFile) ?? throw new Exception("Failed to load config file.");
-                configFile = (ConfigFile)preConfigFile;
+                configFile = preConfigFile;
                 InternalDeserializeFilters(false);
             }
             catch (Exception e)
@@ -40,6 +43,11 @@ internal static class ConfigurationHandler
     }
     public static bool TryReserializeConfigFile() =>
         InternalTryReserializeConfigFile(true);
+    public static void DeserializeFilters() => InternalDeserializeFilters(true);
+
+
+    // ********* Internal methods **********
+
     static bool InternalTryReserializeConfigFile(bool logSaving)
     {
         if (string.IsNullOrEmpty(configPath)) return false;
@@ -47,7 +55,25 @@ internal static class ConfigurationHandler
             ConsoleHelper.LogInfo("Saving config file...");
         try
         {
-            File.WriteAllText(configPath, JsonSerializer.Serialize(configFile, AppJsonContext.Default.ConfigFile));
+            var serialized = JsonSerializer.Serialize(configFile, AppJsonContext.Default.ConfigFile);
+            var dir = Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory();
+            var tempFile = Path.Combine(dir, Path.GetRandomFileName());
+
+            // Write to a temp file first
+            File.WriteAllText(tempFile, serialized);
+
+            if (File.Exists(configPath))
+            {
+                var backupPath = configPath + ".bak";
+                File.Replace(tempFile, configPath, backupPath, ignoreMetadataErrors: true);
+                // Remove the backup if everything is fine
+                try { if (File.Exists(backupPath)) File.Delete(backupPath); } catch { }
+            }
+            else
+            {
+                // Move the temp file into place for initial creation
+                File.Move(tempFile, configPath);
+            }
             if (logSaving)
                 ConsoleHelper.LogSuccess("Saved config file with success!");
             return true;
@@ -60,10 +86,7 @@ internal static class ConfigurationHandler
         }
     }
     // For each field type, there's a key-pair check for replacing names in this global filter dictionary
-    public static Dictionary<LevelFieldType, FilterObject> filterKeyPairs = [];
-    public static ConfigFile configFile = new();
 
-    public static void DeserializeFilters() => InternalDeserializeFilters(true);
     static void InternalDeserializeFilters(bool log)
     {
         if (log)
