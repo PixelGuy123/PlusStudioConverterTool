@@ -1,0 +1,8 @@
+{
+  "AreaType": "RoomTexture",
+  "replacements": {
+    "FacultyWall": "WallWithMolding",
+    "Actual": "TileFloor"
+  },
+  "exclusions": []
+}

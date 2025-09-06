@@ -1,0 +1,10 @@
+{
+  "AreaType": "Door",
+  "replacements": {
+    "swing": "swinging",
+    "swingsilent": "swinging_silent",
+    "coin": "coinswinging",
+    "mysterydoor": "standard"
+  },
+  "exclusions": []
+}

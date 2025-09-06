@@ -1,0 +1,8 @@
+{
+  "AreaType": "Object",
+  "replacements": {
+    "examination": "examinationtable",
+    "cabinettall": "cabinet"
+  },
+  "exclusions": []
+}

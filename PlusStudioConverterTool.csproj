@@ -1,0 +1,82 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <Description>Provides a handful amount of options to manipulate editor level files.</Description>
+    <FileVersion>2.0.0</FileVersion>
+    <AssemblyVersion>2.0.0</AssemblyVersion>
+    <PackageIcon></PackageIcon>
+    <ApplicationIcon>cbldtobld.ico</ApplicationIcon>
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="cbldtobld.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+	 
+	 <Reference Include="Assembly-CSharp">
+	   <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BALDI_Data\Managed\Assembly-CSharp.dll</HintPath>
+	 </Reference>
+	 
+	 <Reference Include="BaldiLevelEditor">
+	 <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\FullyAccessibleEditor\BaldiLevelEditor.dll</HintPath>
+	 </Reference>
+	 
+	 <Reference Include="PlusLevelFormat">
+	   <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\editor\PlusLevelFormat.dll</HintPath>
+	 </Reference>
+	 
+	 <Reference Include="PlusLevelLoader">
+	   <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\editor\PlusLevelLoader.dll</HintPath>
+	 </Reference>
+
+   <Reference Include="PlusLevelStudio">
+	   <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\plugins\newEditor\PlusLevelStudio.dll</HintPath>
+	 </Reference>
+
+   <Reference Include="PlusStudioLevelFormat">
+	   <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\plugins\newEditor\PlusStudioLevelFormat.dll</HintPath>
+	 </Reference>
+
+   <Reference Include="PlusStudioLevelLoader">
+	   <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\plugins\newEditor\PlusStudioLevelLoader.dll</HintPath>
+	 </Reference>
+    
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BALDI_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+
+    <Reference Include="HarmonyLib">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\core\0Harmony.dll</HintPath>
+    </Reference>
+
+    <Reference Include="BepInEx">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\core\BepInEx.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="cbldtobld.ico">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="cbldtobld.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+  </ItemGroup>
+
+</Project>
