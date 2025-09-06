@@ -1,4 +1,5 @@
-﻿using PlusStudioConverterTool.Extensions;
+﻿using System.Diagnostics.CodeAnalysis;
+using PlusStudioConverterTool.Extensions;
 using PlusStudioConverterTool.Models;
 using PlusStudioConverterTool.Services;
 
@@ -9,42 +10,46 @@ namespace PlusStudioConverterTool
 		private static void Main(string[] args)
 		{
 
-		// Debug operation to get the json file all ready
-		// File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "FilterObjectSample.json"),
-		// 	Newtonsoft.Json.JsonConvert.SerializeObject(new FilterObject()
-		// 	{
-		// 		AreaType = LevelFieldType.Object,
-		// 		replacements = new()
-		// 		{
-		// 		{ "examination", "examinationtable" },
-		// 		{ "cabinettall", "cabinet" },
-		// 		}
-		// 	}, Newtonsoft.Json.Formatting.Indented)
-		// );
-		// File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "FilterDoorSample.json"),
-		// 	Newtonsoft.Json.JsonConvert.SerializeObject(new FilterObject()
-		// 	{
-		// 		AreaType = LevelFieldType.Door,
-		// 		replacements = new()
-		// 		{
-		// 		{ "swing", "swinging" },
-		// 		{ "swingsilent", "swinging_silent" },
-		// 		{ "coin", "coinswinging" },
-		// 		}
-		// 	}, Newtonsoft.Json.Formatting.Indented)
-		// );
-		// File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "FilterTextureSample.json"),
-		// 	Newtonsoft.Json.JsonConvert.SerializeObject(new FilterObject()
-		// 	{
-		// 		AreaType = LevelFieldType.RoomTexture,
-		// 		replacements = new()
-		// 		{
-		// 		{ "FacultyWall", "WallWithMolding" },
-		// 		{ "Actual", "TileFloor" }
-		// 		}
-		// 	}, Newtonsoft.Json.Formatting.Indented)
-		// );
-		// return;
+			// Debug operation to get the json file all ready
+			// File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "FilterObjectSample.json"),
+			// 	System.Text.Json.JsonSerializer.Serialize(new FilterObject(), new System.Text.Json.JsonSerializerOptions { WriteIndented = true })
+			// 	{
+			// 		AreaType = LevelFieldType.Object,
+			// 		replacements = new()
+			// 		{
+			// 		{ "examination", "examinationtable" },
+			// 		{ "cabinettall", "cabinet" },
+			// 		}
+			// 	}, Newtonsoft.Json.Formatting.Indented)
+			// );
+			// File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "FilterDoorSample.json"),
+			// 	System.Text.Json.JsonSerializer.Serialize(new FilterObject(), new System.Text.Json.JsonSerializerOptions { WriteIndented = true })
+			// 	{
+			// 		AreaType = LevelFieldType.Door,
+			// 		replacements = new()
+			// 		{
+			// 		{ "swing", "swinging" },
+			// 		{ "swingsilent", "swinging_silent" },
+			// 		{ "coin", "coinswinging" },
+			// 		}
+			// 	}, Newtonsoft.Json.Formatting.Indented)
+			// );
+			// File.WriteAllText(Path.Combine(Directory.GetCurrentDirectory(), "FilterTextureSample.json"),
+			// 	System.Text.Json.JsonSerializer.Serialize(new FilterObject(), new System.Text.Json.JsonSerializerOptions { WriteIndented = true })
+			// 	{
+			// 		AreaType = LevelFieldType.RoomTexture,
+			// 		replacements = new()
+			// 		{
+			// 		{ "FacultyWall", "WallWithMolding" },
+			// 		{ "Actual", "TileFloor" }
+			// 		}
+			// 	}, Newtonsoft.Json.Formatting.Indented)
+			// );
+			// return;
+
+			// ********* Only-once setup ***********
+			AltLevelLoaderExtensions.InitializeSettings();
+
 		start:
 			Console.Clear();
 			Console.WriteLine(@"
@@ -110,15 +115,19 @@ namespace PlusStudioConverterTool
 
 			var optionTuple = ConsoleHelper.RetrieveUserSelection("Here\'s a list of the available modes in this tool.",
 				"CBLDtoBLD Converter",
-				"BLDtoEBPL Converter",
 				"CBLDtoRBPL Converter",
-				"RBPLtoEBPL Converter"
+				"BLDtoEBPL Converter",
+				"RBPLtoEBPL Converter",
+				"PBPLtoEBPL Converter",
+				"BPLtoEBPL Converter"
 				);
 			string[] descriptions = [
-				"Convert the old legacy compiled format CBLD to an editor also-legacy format BLD. That could be useful to retrieve old files, for other converters inside this program.",
-				"Converts a BLD to a EBPL file. In other words, a legacy editor file to a new one! And you don\'t even lose a bit from what was in the older days.",
+				"Convert the old legacy compiled format CBLD to an editor also-legacy format BLD. That could be useful to retrieve old files, for other converters inside this program. Areas and manually placed walls are assumed, but usually accurate inside the conversion process.",
 				"Converts a CBLD directly to a RBPL file. This is useful if you\'re aiming to port your room assets to the new format! The markers are also included",
-				"Converts the RBPL file to a EBPL. This way, you can actually edit back your room!"
+				"Converts a BLD to a EBPL file. In other words, a legacy editor file to a new one! And you don\'t even lose a bit from what was in the older days.",
+				"Converts the RBPL file to a EBPL. This way, you can actually edit back your room!",
+				"Converts the PBPL file to a EBPL. The playable level becomes an editable level! Just note it technically works the same way as CBLDtoBLD, but with key differences in loading structures.",
+				"Converts the BPL file to a EBPL. This compiled level can turn into an editable one with no issue!"
 			];
 			Console.WriteLine($"Selected mode: {optionTuple.Item2}");
 			Console.WriteLine($"Description: {descriptions[optionTuple.Item1 - 1]}");

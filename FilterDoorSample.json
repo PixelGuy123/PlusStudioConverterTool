@@ -3,7 +3,8 @@
   "replacements": {
     "swing": "swinging",
     "swingsilent": "swinging_silent",
-    "coin": "coinswinging"
+    "coin": "coinswinging",
+    "mysterydoor": "standard"
   },
   "exclusions": []
 }

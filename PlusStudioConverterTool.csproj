@@ -11,6 +11,7 @@
     <AssemblyVersion>2.0.0</AssemblyVersion>
     <PackageIcon></PackageIcon>
     <ApplicationIcon>cbldtobld.ico</ApplicationIcon>
+    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>
@@ -54,6 +55,10 @@
     <Reference Include="HarmonyLib">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\core\0Harmony.dll</HintPath>
     </Reference>
+
+    <Reference Include="BepInEx">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\core\BepInEx.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -68,7 +73,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Removed Newtonsoft.Json; migrated to System.Text.Json in code -->
   </ItemGroup>
 
 </Project>

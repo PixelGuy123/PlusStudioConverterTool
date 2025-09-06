@@ -4,7 +4,9 @@ internal enum TargetType
 {
     Null = 0,
     CBLDtoBLD = 1,
-    BLDtoEBPL = 2,
-    CBLDtoRBPL = 3,
-    RBPLtoEBPL = 4
+    CBLDtoRBPL = 2,
+    BLDtoEBPL = 3,
+    RBPLtoEBPL = 4,
+    PBPLtoEBPL = 5,
+    BPLtoEBPL = 6,
 }

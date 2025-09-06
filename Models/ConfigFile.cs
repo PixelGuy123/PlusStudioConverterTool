@@ -1,8 +1,9 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
+
 namespace PlusStudioConverterTool.Models;
 
-[JsonObject]
 internal sealed class ConfigFile
 {
-    public List<string> jsonFilterPaths = [];
+    [JsonPropertyName("jsonFilterPaths")]
+    public List<string> jsonFilterPaths { get; set; } = [];
 }

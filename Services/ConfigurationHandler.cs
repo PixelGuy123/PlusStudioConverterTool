@@ -1,5 +1,4 @@
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using System.Text.Json;
 using PlusStudioConverterTool.Models;
 
 
@@ -25,13 +24,14 @@ internal static class ConfigurationHandler
         {
             try
             {
-                var preConfigFile = JsonConvert.DeserializeObject<ConfigFile>(File.ReadAllText(configPath)) ?? throw new Exception("Failed to load config file.");
-                configFile = preConfigFile;
+                var preConfigFile = JsonSerializer.Deserialize(File.ReadAllText(configPath), AppJsonContext.Default.ConfigFile) ?? throw new Exception("Failed to load config file.");
+                configFile = (ConfigFile)preConfigFile;
                 InternalDeserializeFilters(false);
             }
-            catch
+            catch (Exception e)
             {
                 ConsoleHelper.LogError("Failed to read the config file as the content may be corrupted or wrongly structured. Using default settings...");
+                ConsoleHelper.LogError(e.ToString());
             }
             return;
         }
@@ -47,7 +47,7 @@ internal static class ConfigurationHandler
             ConsoleHelper.LogInfo("Saving config file...");
         try
         {
-            File.WriteAllText(configPath, JsonConvert.SerializeObject(configFile));
+            File.WriteAllText(configPath, JsonSerializer.Serialize(configFile, AppJsonContext.Default.ConfigFile));
             if (logSaving)
                 ConsoleHelper.LogSuccess("Saved config file with success!");
             return true;
@@ -83,7 +83,7 @@ internal static class ConfigurationHandler
             {
                 // Read file contents and deserialize
                 var fileContent = File.ReadAllText(jsonPath);
-                var filterObj = JsonConvert.DeserializeObject<FilterObject>(fileContent) ?? throw new Exception("Failed to load filter object.");
+                var filterObj = JsonSerializer.Deserialize(fileContent, AppJsonContext.Default.FilterObject) ?? throw new Exception("Failed to load filter object.");
 
 
                 if (filterObj.replacements.Count == 0 && filterObj.exclusions.Count == 0)

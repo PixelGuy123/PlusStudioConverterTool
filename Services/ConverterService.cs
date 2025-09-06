@@ -1,5 +1,7 @@
 using BaldiLevelEditor;
 using PlusLevelFormat;
+using PlusLevelStudio;
+using PlusStudioConverterTool.Converters;
 using PlusStudioConverterTool.Extensions;
 using PlusStudioConverterTool.Models;
 using PlusStudioLevelFormat;
@@ -34,6 +36,18 @@ namespace PlusStudioConverterTool.Services
                     break;
                 case TargetType.RBPLtoEBPL:
                     action = ConvertRBPLtoEBPLFiles;
+                    break;
+                case TargetType.PBPLtoEBPL:
+                    settings = new EditorSettings(
+                        ConsoleHelper.RetrieveUserSelection("Which editor mode should the converted level(s) use?", "Full", "Compliant").Item2.ToLower()
+                    );
+                    action = ConvertPBPLoEBPLFiles;
+                    break;
+                case TargetType.BPLtoEBPL:
+                    settings = new EditorSettings(
+                        ConsoleHelper.RetrieveUserSelection("Which editor mode should the converted level(s) use?", "Full", "Compliant").Item2.ToLower()
+                    );
+                    action = ConvertBPLoEBPLFiles;
                     break;
                 default:
                     throw new ArgumentException("Invalid TargetType");
@@ -177,6 +191,76 @@ namespace PlusStudioConverterTool.Services
             ConsoleHelper.LogSuccess($"RBPL file converted to {Path.GetFileName(fname)}");
         }
 
+        private static void ConvertPBPLoEBPLFiles(string file, string? exportFolder, out string fname, ConversionSettings? settings)
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+
+            if (settings is not EditorSettings editSettings)
+                throw new ArgumentException($"ConversionSettings is not of EditorSettings type.");
+
+            ConsoleHelper.LogInfo("Reading PBPL level...");
+            PlayableEditorLevel level;
+            using (var reader = new BinaryReader(File.OpenRead(file)))
+            {
+                level = reader.ReadPlayableLevelWithoutThumbnail();
+            }
+            var targetDir = string.IsNullOrEmpty(exportFolder) ? Path.GetDirectoryName(file) : exportFolder;
+
+            if (string.IsNullOrEmpty(targetDir))
+                throw new DirectoryNotFoundException("Could not determine target directory for output file.");
+
+            fname = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(file) + ".ebpl");
+
+            // Ensure we don't overwrite an existing file: pick a unique filename
+            fname = GetUniqueFilePath(fname);
+
+
+            var conversion = level.data.ConvertBPLtoEBPLFormat(
+                level.meta,
+                editSettings.EditorMode
+                );
+            // Comes later to prevent creating an empty file
+            using var writer = new BinaryWriter(File.OpenWrite(fname));
+            conversion.Write(writer);
+
+            ConsoleHelper.LogSuccess($"PBPL file converted to {Path.GetFileName(fname)}");
+        }
+
+        private static void ConvertBPLoEBPLFiles(string file, string? exportFolder, out string fname, ConversionSettings? settings)
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+
+            if (settings is not EditorSettings editSettings)
+                throw new ArgumentException($"ConversionSettings is not of EditorSettings type.");
+
+            ConsoleHelper.LogInfo("Reading BPL level...");
+            BaldiLevel level;
+            using (var reader = new BinaryReader(File.OpenRead(file)))
+            {
+                level = BaldiLevel.Read(reader);
+            }
+            var targetDir = string.IsNullOrEmpty(exportFolder) ? Path.GetDirectoryName(file) : exportFolder;
+
+            if (string.IsNullOrEmpty(targetDir))
+                throw new DirectoryNotFoundException("Could not determine target directory for output file.");
+
+            fname = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(file) + ".ebpl");
+
+            // Ensure we don't overwrite an existing file: pick a unique filename
+            fname = GetUniqueFilePath(fname);
+
+
+            var conversion = level.ConvertBPLtoEBPLFormat(
+                null,
+                editSettings.EditorMode
+                );
+            // Comes later to prevent creating an empty file
+            using var writer = new BinaryWriter(File.OpenWrite(fname));
+            conversion.Write(writer);
+
+            ConsoleHelper.LogSuccess($"BPL file converted to {Path.GetFileName(fname)}");
+        }
+
         // Gets unique file path by doing what Windows does
         // Example: "File.bld" -> "File (2).bld" if "File.bld" already exists
         private static string GetUniqueFilePath(string path)
@@ -199,7 +283,8 @@ namespace PlusStudioConverterTool.Services
         }
 
         abstract record ConversionSettings { }
-        record BLDtoEBPLSettings(bool AutoLightFill, string EditorMode) : ConversionSettings { }
+        record EditorSettings(string EditorMode) : ConversionSettings { }
+        record BLDtoEBPLSettings(bool AutoLightFill, string EditorMode) : EditorSettings(EditorMode) { }
         delegate void ConversionMethod(string file, string? exportFolder, out string fname, ConversionSettings? settings);
     }
 }

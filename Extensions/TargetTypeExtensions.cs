@@ -10,6 +10,8 @@ internal static class TargetTypeExtensions
         TargetType.CBLDtoBLD => ".cbld",
         TargetType.CBLDtoRBPL => ".cbld",
         TargetType.RBPLtoEBPL => ".rbpl",
+        TargetType.PBPLtoEBPL => ".pbpl",
+        TargetType.BPLtoEBPL => ".bpl",
         _ => string.Empty
     };
 }

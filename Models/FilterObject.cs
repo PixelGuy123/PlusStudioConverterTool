@@ -1,15 +1,15 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace PlusStudioConverterTool.Models;
 
-[JsonObject]
-internal sealed class FilterObject()
+internal sealed class FilterObject
 {
-    [JsonRequired]
-    public string AreaType = "Object";
-    [JsonRequired]
-    public Dictionary<string, string> replacements = [];
+    [JsonPropertyName("AreaType")]
+    public string AreaType { get; set; } = "Object";
 
-    [JsonRequired]
-    public HashSet<string> exclusions = [];
+    [JsonPropertyName("replacements")]
+    public Dictionary<string, string> replacements { get; set; } = [];
+
+    [JsonPropertyName("exclusions")]
+    public HashSet<string> exclusions { get; set; } = [];
 }
