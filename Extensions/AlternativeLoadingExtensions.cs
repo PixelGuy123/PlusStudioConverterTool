@@ -84,4 +84,19 @@ internal static class AltLevelLoaderExtensions
     {
         { "matchballoon", typeof(MatchBalloonMarker) }
     };
+    readonly static Dictionary<Direction, IntVector2> vectors = new()
+    {
+        { Direction.North, new(0, 1) },
+        { Direction.East, new(1, 0) },
+        { Direction.South, new(0, -1) },
+        { Direction.West, new(-1, 0) }
+    };
+    readonly static Dictionary<Direction, int> bitPosition = new()
+    {
+        { Direction.North,  0 },
+        {Direction.East, 1 },
+        {Direction.South, 2},
+        {Direction.West, 3}
+    };
+
 }

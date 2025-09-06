@@ -131,6 +131,8 @@ internal static partial class Converters
 
         ConsoleHelper.LogConverterInfo("Initializing tile data...");
 
+        bool checkForWalls = false;
+
         foreach (var tile in level.tiles)
         {
             int x = tile.position.x;
@@ -138,23 +140,38 @@ internal static partial class Converters
             //Console.WriteLine($"Checking wall position at ({x},{y}), is it InBounds? {level.tiles.InBounds(x, y)}");
             if (!level.tiles.InBounds(x, y) || !level.tiles[x, y].IsValid()) continue;
 
-            foreach (var dir in tile.DirsFromTile())
+            for (int i = 0; i <= 1; i++)
             {
-                var vec = dir.ToByteVector2();
-                //Console.WriteLine($"Checking wall at ({x},{y}) as placed in dir: {dir} with offset: ({vec.Item1},{vec.Item2})"); // 3 walls?? Check with another level I guess
-                x += vec.Item1;
-                y += vec.Item2;
-
-                if (level.tiles.InBounds(x, y) && level.tiles[x, y].IsValid(tile.roomId))
+                foreach (var dir in tile.DirsFromTile(checkForWalls))
                 {
-                    ConsoleHelper.LogConverterInfo($"Marked wall at ({tile.position.x},{tile.position.y}) as placed in dir: {dir}");
-                    newLevel.manualWalls.Add(new() { direction = dir, position = new(tile.position.x, tile.position.y) }); // converts to int which is equal to the PlusDirection
-                    level.tiles[tile.position.x, tile.position.y].walls = (Nybble)ToggleBit(level.tiles[tile.position.x, tile.position.y].walls, (int)dir);
-                }
+                    var vec = dir.ToByteVector2();
+                    //Console.WriteLine($"Checking wall at ({x},{y}) as placed in dir: {dir} with offset: ({vec.Item1},{vec.Item2})"); // 3 walls?? Check with another level I guess
+                    x += vec.Item1;
+                    y += vec.Item2;
 
-                x = tile.position.x;
-                y = tile.position.y;
+                    if (level.tiles.InBounds(x, y) && level.tiles[x, y].roomId != 0 && (level.tiles[x, y].roomId == tile.roomId == checkForWalls))
+                    {
+                        ConsoleHelper.LogConverterInfo($"Marked {(checkForWalls ? "wall" : "wall-remover")} at ({tile.position.x},{tile.position.y}) as placed in dir: {dir}");
+                        newLevel.manualWalls.Add(new() { direction = dir, position = new(tile.position.x, tile.position.y), wall = checkForWalls }); // converts to int which is equal to the PlusDirection
+                        level.tiles[tile.position.x, tile.position.y].walls = (Nybble)ToggleBit(level.tiles[tile.position.x, tile.position.y].walls, (int)dir);
+                    }
+
+                    x = tile.position.x;
+                    y = tile.position.y;
+                }
             }
+        }
+
+        // Failsafe to remove duplicated walls
+        for (int i = 0; i < newLevel.manualWalls.Count; i++)
+        {
+            var currentWall = newLevel.manualWalls[i];
+            var tempByteVector = currentWall.direction.ToByteVector2();
+            var adjacentPosition = currentWall.position + new ByteVector2(tempByteVector.Item1, tempByteVector.Item2);
+            var oppositeDir = currentWall.direction.GetOpposite();
+            // If in the currentWall, another adjacent wall placement exists with the same exact direction opposition, then this currentWall shouldn't exist
+            if (newLevel.manualWalls.Exists(wall => currentWall != wall && wall.position == adjacentPosition && wall.direction == oppositeDir))
+                newLevel.manualWalls.RemoveAt(i--);
         }
 
         ConsoleHelper.LogConverterInfo($"{newLevel.manualWalls.Count} walls placed in total!");

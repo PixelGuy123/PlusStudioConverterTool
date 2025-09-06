@@ -1,5 +1,6 @@
 using PlusLevelStudio;
 using PlusLevelStudio.Editor;
+using PlusStudioConverterTool.Extensions;
 using PlusStudioConverterTool.Models;
 using PlusStudioConverterTool.Services;
 using PlusStudioLevelFormat;
@@ -30,12 +31,12 @@ internal static partial class Converters
             minRandomEventGap = level.minRandomEventGap,
             maxRandomEventGap = level.maxRandomEventGap,
             randomEvents = [.. level.randomEvents],
-            meta = meta ?? new PlayableLevelMeta() // Use provided meta or create a default one.
+            meta = new PlayableLevelMeta() // Use provided meta or create a default one.
             {
                 name = level.levelTitle,
-                author = "BPL Converted",
-                gameMode = "standard",
-                contentPackage = new EditorCustomContentPackage(true)
+                author = meta != null ? meta.author : "BPL Converted",
+                gameMode = meta != null ? meta.gameMode : "standard",
+                contentPackage = new EditorCustomContentPackage(true) { entries = meta != null ? meta.contentPackage.entries : [] }
             }
         };
 
@@ -215,31 +216,50 @@ internal static partial class Converters
         ConsoleHelper.LogConverterInfo($"{newData.lightGroups.Count} light groups created.");
 
         // 7. Detect and create manual (internal) walls.
+
         ConsoleHelper.LogConverterInfo("Detecting manual walls...");
-        foreach (var tile in newData.cells)
+        foreach (var tile in level.cells)
         {
             int x = tile.position.x;
             int y = tile.position.y;
-            //Console.WriteLine($"Checking wall position at ({x},{y}), is it InBounds? {level.tiles.InBounds(x, y)}");
-            if (!newData.cells.InBounds(x, y) || !newData.cells[x, y].IsValid()) continue;
 
-            foreach (var dir in tile.DirsFromTile())
+            if (!level.cells.InBounds(x, y) || level.cells[x, y].roomId == 0) continue;
+            // Console.WriteLine($"Checking wall position at ({x},{y})");
+            bool checkForWalls = false;
+            for (int i = 0; i <= 1; i++)
             {
-                var vec = dir.ToByteVector2();
-                //Console.WriteLine($"Checking wall at ({x},{y}) as placed in dir: {dir} with offset: ({vec.Item1},{vec.Item2})"); // 3 walls?? Check with another level I guess
-                x += vec.Item1;
-                y += vec.Item2;
-
-                if (newData.cells.InBounds(x, y) && newData.cells[x, y].IsValid(tile.roomId))
+                foreach (var dir in tile.DirsFromTile(checkForWalls))
                 {
-                    ConsoleHelper.LogConverterInfo($"Marked wall at ({tile.position.x},{tile.position.y}) as placed in dir: {dir}");
-                    newData.walls.Add(new() { direction = (Direction)dir, position = new(tile.position.x, tile.position.y) }); // converts to int which is equal to the PlusDirection
-                    newData.cells[tile.position.x, tile.position.y].walls = (Nybble)ToggleBit(newData.cells[tile.position.x, tile.position.y].walls, (int)dir);
-                }
+                    var vec = dir.ToByteVector2();
+                    // Console.WriteLine($"Checking wall at ({x},{y}) as placed in dir: {dir} with offset: ({vec.Item1},{vec.Item2})"); // 3 walls?? Check with another level I guess
+                    x += vec.Item1;
+                    y += vec.Item2;
+                    // Console.WriteLine($"Normal ID: {tile.roomId} | OffsetID: {level.cells[x, y].roomId}");
 
-                x = tile.position.x;
-                y = tile.position.y;
+                    if (level.cells.InBounds(x, y) &&
+                    level.cells[x, y].roomId != 0 && // Must be non-zero to actually count as a room, not void
+                    (level.cells[x, y].roomId == tile.roomId == checkForWalls)) // If checkForWalls, it should expect the tiles to be from the same room id
+                    {
+                        ConsoleHelper.LogConverterInfo($"Marked {(checkForWalls ? "wall" : "wall-remover")} at ({tile.position.x},{tile.position.y}) as placed in dir: {dir}");
+                        newData.walls.Add(new() { direction = (Direction)dir, position = new(tile.position.x, tile.position.y), wallState = checkForWalls }); // converts to int which is equal to the PlusDirection
+                        newData.cells[tile.position.x, tile.position.y].walls = (Nybble)ToggleBit(newData.cells[tile.position.x, tile.position.y].walls, (int)dir);
+                    }
+
+                    x = tile.position.x;
+                    y = tile.position.y;
+                }
+                checkForWalls = !checkForWalls;
             }
+        }
+        // Failsafe to remove duplicated walls
+        for (int i = 0; i < newData.walls.Count; i++)
+        {
+            var currentWall = newData.walls[i];
+            var adjacentPosition = currentWall.position + currentWall.direction.ToNETIntVector2();
+            var oppositeDir = currentWall.direction.GetNETOpposite();
+            // If in the currentWall, another adjacent wall placement exists with the same exact direction opposition, then this currentWall shouldn't exist
+            if (newData.walls.Exists(wall => currentWall != wall && wall.position == adjacentPosition && wall.direction == oppositeDir))
+                newData.walls.RemoveAt(i--);
         }
         ConsoleHelper.LogConverterInfo($"{newData.walls.Count} manual walls detected.");
 

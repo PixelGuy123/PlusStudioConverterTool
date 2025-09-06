@@ -67,7 +67,7 @@ namespace PlusStudioConverterTool
 			Console.WriteLine();
 
 			if (args.Length != 0)
-				ConsoleHelper.LogInfo("Some files were detected by this tool! If you\'re wishing to convert them or extract their content, select the approprieate tool below!");
+				ConsoleHelper.LogInfo("Some files were detected by this tool! If you\'re wishing to convert them or extract their content, select the appropriate tool below!");
 
 			bool emptyOutArgs = false, promptRestartTool = true;
 

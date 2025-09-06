@@ -2,6 +2,7 @@
 using PlusLevelLoader;
 using PlusLevelStudio;
 using PlusLevelStudio.Editor;
+using PlusStudioConverterTool.Extensions;
 using PlusStudioConverterTool.Models;
 using PlusStudioConverterTool.Services;
 using PlusStudioLevelFormat;
@@ -172,6 +173,7 @@ internal static partial class Converters
 		ConsoleHelper.LogConverterInfo($"{newData.areas.Count} cell areas created.");
 
 		// 5.5. Detect and convert internal "manual" walls.
+
 		ConsoleHelper.LogConverterInfo("Detecting and converting manual walls...");
 		var cellPositions = new HashSet<IntVector2>(roomAsset.cells.Select(c => c.position.ToInt()));
 		foreach (var cell in roomAsset.cells)
@@ -197,6 +199,16 @@ internal static partial class Converters
 					}
 				}
 			}
+		}
+		// Failsafe to remove duplicated walls
+		for (int i = 0; i < newData.walls.Count; i++)
+		{
+			var currentWall = newData.walls[i];
+			var adjacentPosition = currentWall.position + currentWall.direction.ToNETIntVector2();
+			var oppositeDir = currentWall.direction.GetNETOpposite();
+			// If in the currentWall, another adjacent wall placement exists with the same exact direction opposition, then this currentWall shouldn't exist
+			if (newData.walls.Exists(wall => currentWall != wall && wall.position == adjacentPosition && wall.direction == oppositeDir))
+				newData.walls.RemoveAt(i--);
 		}
 		ConsoleHelper.LogConverterInfo($"{newData.walls.Count} manual walls created.");
 

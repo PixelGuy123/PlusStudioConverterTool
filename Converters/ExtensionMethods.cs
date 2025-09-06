@@ -33,21 +33,21 @@ internal static partial class Converters
         return true;
     }
 
-    static List<PlusLevelFormat.PlusDirection> DirsFromTile(this PlusLevelFormat.Tile t)
+    static List<PlusLevelFormat.PlusDirection> DirsFromTile(this PlusLevelFormat.Tile t, bool checkForWall)
     {
         List<PlusLevelFormat.PlusDirection> list = [];
         for (int i = 1; i <= 4; i++)
-            if (IsBitSet(t.walls, i))
+            if (IsBitSet(t.walls, i) == checkForWall)
                 list.Add((PlusLevelFormat.PlusDirection)i);
 
         return list;
     }
 
-    static List<PlusStudioLevelFormat.PlusDirection> DirsFromTile(this PlusStudioLevelFormat.Cell t)
+    static List<PlusStudioLevelFormat.PlusDirection> DirsFromTile(this PlusStudioLevelFormat.Cell t, bool checkForWall)
     {
         List<PlusStudioLevelFormat.PlusDirection> list = [];
         for (int i = 1; i <= 4; i++)
-            if (IsBitSet(t.walls, i))
+            if (IsBitSet(t.walls, i) == checkForWall)
                 list.Add((PlusStudioLevelFormat.PlusDirection)i);
 
         return list;
@@ -93,6 +93,33 @@ internal static partial class Converters
         _ => new(0, 0)
     };
 
+    static IntVector2 ToNETIntVector2(this Direction dir) => dir switch
+    {
+        Direction.North => new(0, 1),
+        Direction.West => new(-1, 0),
+        Direction.East => new(1, 0),
+        Direction.South => new(0, -1),
+        _ => new(0, 0)
+    };
+
+    static Direction GetNETOpposite(this Direction dir) => dir switch
+    {
+        Direction.North => Direction.South,
+        Direction.West => Direction.East,
+        Direction.East => Direction.West,
+        Direction.South => Direction.North,
+        _ => Direction.Null
+    };
+
+    static PlusLevelFormat.PlusDirection GetOpposite(this PlusLevelFormat.PlusDirection dir) => dir switch
+    {
+        PlusLevelFormat.PlusDirection.North => PlusLevelFormat.PlusDirection.South,
+        PlusLevelFormat.PlusDirection.West => PlusLevelFormat.PlusDirection.East,
+        PlusLevelFormat.PlusDirection.East => PlusLevelFormat.PlusDirection.West,
+        PlusLevelFormat.PlusDirection.South => PlusLevelFormat.PlusDirection.North,
+        _ => PlusLevelFormat.PlusDirection.Null
+    };
+
     private static Direction ToDirection(this IntVector2 vec)
     {
         vec = new(Math.Sign(vec.x), Math.Sign(vec.z)); // Clamp to [-1, 1]
@@ -104,9 +131,6 @@ internal static partial class Converters
     }
 
     static bool IsValid(this PlusLevelFormat.Tile t, int expectedId = -1) =>
-        t.type != 16 && (expectedId == -1 || t.roomId == expectedId);
-
-    static bool IsValid(this PlusStudioLevelFormat.Cell t, int expectedId = -1) =>
         t.type != 16 && (expectedId == -1 || t.roomId == expectedId);
 
     static bool InBounds<T>(this T[,] vals, int x, int y) =>
