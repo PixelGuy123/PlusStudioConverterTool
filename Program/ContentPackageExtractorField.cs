@@ -6,7 +6,9 @@ namespace PlusStudioConverterTool
 {
 	internal static partial class Program
 	{
-		static bool ContentPackageExtractorField(ref string[] args)
+		// Bool: Indicate whether to clean up the args or not
+		// Bool: indicates whether to prompt restart tool or directly restart the tool (false to direct restart)
+		static (bool, bool) ContentPackageExtractorField(ref string[] args)
 		{
 			while (true)
 			{
@@ -24,13 +26,16 @@ namespace PlusStudioConverterTool
 				// Select a specific extractor, since both files have different encodings
 				var optionTuple = ConsoleHelper.RetrieveUserSelection("Here\'s a list of the available modes in this tool.",
 					"PBPL Extractor",
-					"EBPL Extractor"
+					"Exit"
 					);
+
+				if (optionTuple.Item2 == "Exit") // Literally exits the tool
+					return (false, false);
+
 				// Get the right extension
 				string extension = optionTuple.Item1 switch
 				{
 					1 => ".pbpl",
-					2 => ".ebpl",
 					_ => string.Empty // Should never happen technically
 				};
 
@@ -58,18 +63,18 @@ namespace PlusStudioConverterTool
 				if (files.Count == 0)
 				{
 					ConsoleHelper.LogError($"No {extension} files found to be extracted. Exiting.");
-					return false;
+					return (false, true);
 				}
 				// Get an export folder, then do the conversion setup
 				var exportFolder = ConsoleHelper.PromptForExportFolder(true, "An export folder is required to put all the extracted assets inside!");
 				if (string.IsNullOrEmpty(exportFolder))
 				{
 					ConsoleHelper.LogError("Invalid export folder provided. Exiting.");
-					return false;
+					return (false, true);
 				}
 
-				ExtractorService.ExtractFiles(files, exportFolder, extension == ".pbpl");
-				return true;
+				ExtractorService.ExtractFiles(files, exportFolder);
+				return (true, true);
 			}
 		}
 	}

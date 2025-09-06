@@ -1,4 +1,5 @@
-﻿using PlusStudioConverterTool.Extensions;
+﻿using PlusLevelStudio;
+using PlusStudioConverterTool.Extensions;
 using PlusStudioConverterTool.Services;
 
 namespace PlusStudioConverterTool
@@ -80,12 +81,12 @@ namespace PlusStudioConverterTool
 			switch (optionTuple.Item1)
 			{
 				case 1:
-					emptyOutArgs = ConverterField(ref args);
+					(emptyOutArgs, promptRestartTool) = ConverterField(ref args);
 					if (!emptyOutArgs) // If false, it wants to exit
 						goto exit;
 					break;
 				case 2:
-					emptyOutArgs = ContentPackageExtractorField(ref args);
+					(emptyOutArgs, promptRestartTool) = ContentPackageExtractorField(ref args);
 					if (!emptyOutArgs) // If false, it wants to exit
 						goto exit;
 					break;

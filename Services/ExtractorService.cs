@@ -6,9 +6,9 @@ namespace PlusStudioConverterTool.Services
 {
     internal static class ExtractorService
     {
-        public static bool ExtractFiles(List<string> files, string exportFolder, bool isPBPL, bool logActions = true)
+        public static bool ExtractFiles(List<string> files, string exportFolder, bool logActions = true)
         {
-            string extension = isPBPL ? ".pbpl" : ".ebpl";
+            string extension = ".pbpl";
 
             foreach (var file in files)
             {
@@ -24,8 +24,7 @@ namespace PlusStudioConverterTool.Services
 
                 try
                 {
-                    if (isPBPL)
-                        ScanPBPL(file, exportFolder, logActions);
+                    ScanPBPL(file, exportFolder, logActions);
                 }
                 catch (Exception ex)
                 {
@@ -45,26 +44,23 @@ namespace PlusStudioConverterTool.Services
             return true;
         }
 
-        static void ScanPBPL(string file, string exportFolder, bool logActions)
+        public static List<(string, string)> FullPBPLExtraction(PlayableEditorLevel level, bool logActions, byte[]? thumbnailData, string exportPath)
         {
-            if (logActions)
-                ConsoleHelper.LogInfo("Reading PBPL level...");
-            PlayableEditorLevel level;
-            using (var reader = new BinaryReader(File.OpenRead(file)))
-            {
-                level = reader.ReadPlayableLevelWithoutThumbnail(out var thumbnailData);
-            }
-            if (level.meta.contentPackage == null)
-            {
-                if (logActions)
-                    ConsoleHelper.LogWarn($"{Path.GetFileName(file)} skipped because there\'s no meta data to be extracted!");
-                return;
-            }
-            string targetDir = Path.Combine(exportFolder, Path.GetFileNameWithoutExtension(file) + "_Assets");
-            if (!Directory.Exists(targetDir))
-                Directory.CreateDirectory(targetDir);
-
+            List<(string, string)> exportedAssets = [];
             int counter = 0;
+            // Include the thumbnail data
+            Image img;
+            if (thumbnailData != null && thumbnailData.Length != 0)
+            {
+                img = Image.Load(thumbnailData);
+                string ext = img.Configuration.ImageFormats.First().Name;
+                string fileName = $"thumbnail.{ext.ToLowerInvariant()}";
+                img.Save(Path.Combine(exportPath, fileName));
+                if (logActions)
+                    ConsoleHelper.LogConverterInfo($"Exported the {fileName} texture into the folder.");
+                counter++;
+            }
+
             foreach (var entry in level.meta.contentPackage.entries)
             {
                 if (entry.usingFilePath || entry.data == null) // IF there's absolutely no data, don't try to extract
@@ -76,18 +72,43 @@ namespace PlusStudioConverterTool.Services
 
                 if (entry.contentType == "texture" || entry.contentType == "imageposter")
                 {
-                    var img = Image.Load(entry.data);
+                    img = Image.Load(entry.data);
                     string ext = img.Configuration.ImageFormats.First().Name;
                     string fileName = $"{entry.id}.{ext.ToLowerInvariant()}";
-                    img.Save(Path.Combine(targetDir, fileName));
+                    img.Save(Path.Combine(exportPath, fileName));
                     if (logActions)
-                        ConsoleHelper.LogInfo($"Exported the {fileName} texture into the folder.");
+                        ConsoleHelper.LogConverterInfo($"Exported the {fileName} texture into the folder.");
+                    exportedAssets.Add((entry.contentType, fileName));
                     counter++;
                 }
-
             }
+
             if (logActions)
-                ConsoleHelper.LogSuccess($"Successfully extracted {counter} assets into {targetDir}");
+                ConsoleHelper.LogSuccess($"Successfully extracted {counter} assets into {exportPath}");
+            return exportedAssets;
+        }
+
+        static void ScanPBPL(string file, string exportFolder, bool logActions)
+        {
+            if (logActions)
+                ConsoleHelper.LogInfo("Reading PBPL level...");
+            PlayableEditorLevel level;
+            byte[]? thumbnailData;
+            using (var reader = new BinaryReader(File.OpenRead(file)))
+            {
+                level = reader.ReadPlayableLevelWithoutThumbnail(out thumbnailData);
+            }
+            if (level.meta.contentPackage == null)
+            {
+                if (logActions)
+                    ConsoleHelper.LogWarn($"{Path.GetFileName(file)} skipped because there\'s no meta data to be extracted!");
+                return;
+            }
+            string targetDir = Path.Combine(exportFolder, Path.GetFileNameWithoutExtension(file) + "_Assets");
+            if (!Directory.Exists(targetDir))
+                Directory.CreateDirectory(targetDir);
+
+            FullPBPLExtraction(level, logActions, thumbnailData, targetDir);
         }
     }
 }

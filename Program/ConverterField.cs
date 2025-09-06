@@ -6,8 +6,9 @@ namespace PlusStudioConverterTool
 {
 	internal static partial class Program
 	{
-		// If False, goes directly to exit
-		static bool ConverterField(ref string[] args)
+		// Bool: Indicate whether to clean up the args or not
+		// Bool: indicates whether to prompt restart tool or directly restart the tool (false to direct restart)
+		static (bool, bool) ConverterField(ref string[] args)
 		{
 			// 1) Get the right action from user
 			List<string>? inputs = null;
@@ -25,7 +26,8 @@ namespace PlusStudioConverterTool
 				"BLDtoEBPL Converter",
 				"RBPLtoEBPL Converter",
 				"PBPLtoEBPL Converter",
-				"BPLtoEBPL Converter"
+				"BPLtoEBPL Converter",
+				"Exit"
 				);
 			string[] descriptions = [
 				"Convert the old legacy compiled format CBLD to an editor also-legacy format BLD. That could be useful to retrieve old files, for other converters inside this program. Areas and manually placed walls are assumed, but usually accurate inside the conversion process.",
@@ -35,6 +37,10 @@ namespace PlusStudioConverterTool
 				"Converts the PBPL file to a EBPL. The playable level becomes an editable level! Just note it technically works the same way as CBLDtoBLD, but with key differences in loading structures.",
 				"Converts the BPL file to a EBPL. This compiled level can turn into an editable one with no issue!"
 			];
+
+			if (optionTuple.Item2 == "Exit") // Literally exits the tool
+				return (false, false);
+
 			Console.WriteLine($"Selected mode: {optionTuple.Item2}");
 			Console.WriteLine($"Description: {descriptions[optionTuple.Item1 - 1]}");
 			TargetType type = (TargetType)optionTuple.Item1;
@@ -64,12 +70,12 @@ namespace PlusStudioConverterTool
 			if (files.Count == 0)
 			{
 				ConsoleHelper.LogError($"No {type.ToExtension()} files found to convert. Exiting.");
-				return false;
+				return (false, true);
 			}
 			// Get an export folder, then do the conversion setup
 			var exportFolder = ConsoleHelper.PromptForExportFolder(false);
 			ConverterService.ConvertFiles(files, exportFolder, type);
-			return true;
+			return (true, true);
 		}
 	}
 }

@@ -117,7 +117,7 @@ namespace PlusStudioConverterTool.Services
                 {
                     if (Directory.Exists(full) && Directory.EnumerateFileSystemEntries(full).Any()) // If there's anything inside this Directory (as long as it exists)
                     {
-                        LogWarn($"The folder you inserted seems to already contain content inside.\nUsing this path as the export folder will automatically delete everything inside this directory.\nIf you don't want to lose information from the folder, MAKE SURE TO BACKUP IT!");
+                        LogWarn($"The folder you inserted seems to already contain content inside.\nUsing this path as the export folder will automatically delete everything inside this directory.\nIf you don't want to lose the stuff inside this folder, MAKE SURE TO BACKUP IT!");
                         if (!CheckIfUserInputsYOrN("Are you sure you want to proceed?"))
                         {
                             Console.WriteLine(secondFilePrompt);

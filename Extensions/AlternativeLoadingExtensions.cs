@@ -20,6 +20,13 @@ internal static class AltLevelLoaderExtensions
                 thumbnailData = reader.ReadBytes(num); // Discard whatever is done here
         }
 
+        playableEditorLevel.meta = reader.ReadPlayableLevelMetaWithoutEditor(false);
+        playableEditorLevel.data = BaldiLevel.Read(reader);
+        return playableEditorLevel;
+    }
+
+    public static PlayableLevelMeta ReadPlayableLevelMetaWithoutEditor(this BinaryReader reader, bool useOldFilePaths)
+    {
         // ** Manually load PlayableLevelMeta to prevent using StudioPlugin
         PlayableLevelMeta playableLevelMeta = new();
         byte byNum = reader.ReadByte();
@@ -46,16 +53,13 @@ internal static class AltLevelLoaderExtensions
 
         if (byNum < 2)
         {
-            playableLevelMeta.contentPackage = new EditorCustomContentPackage(false);
+            playableLevelMeta.contentPackage = new EditorCustomContentPackage(useOldFilePaths);
         }
         else
         {
             playableLevelMeta.contentPackage = EditorCustomContentPackage.Read(reader);
         }
-
-        playableEditorLevel.meta = playableLevelMeta;
-        playableEditorLevel.data = BaldiLevel.Read(reader);
-        return playableEditorLevel;
+        return playableLevelMeta;
     }
 
     internal static void InitializeSettings()
@@ -66,4 +70,18 @@ internal static class AltLevelLoaderExtensions
     }
 
     readonly static Dictionary<string, EditorGameMode> gameModeAliases = [];
+    readonly static Dictionary<string, Type> structureTypes = new()
+    {
+        { "facultyonlydoor", typeof(HallDoorStructureLocation) },
+        { "lockdowndoor", typeof(LockdownDoorWithButtonsStructureLocation) },
+        { "shapelock", typeof(ShapeLockStructureLocation) },
+        { "conveyorbelt", typeof(ConveyorBeltStructureLocation) },
+        { "vent", typeof(VentStructureLocation) },
+        { "powerlever", typeof(PowerLeverStructureLocation) },
+        { "steamvalves", typeof(SteamValveStructureLocation) },
+    };
+    readonly static Dictionary<string, Type> markerTypes = new()
+    {
+        { "matchballoon", typeof(MatchBalloonMarker) }
+    };
 }

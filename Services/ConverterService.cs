@@ -220,7 +220,6 @@ namespace PlusStudioConverterTool.Services
             // Ensure we don't overwrite an existing file: pick a unique filename
             fname = GetUniqueFilePath(fname);
 
-
             var conversion = level.data.ConvertBPLtoEBPLFormat(
                 level.meta,
                 editSettings.EditorMode
@@ -228,6 +227,29 @@ namespace PlusStudioConverterTool.Services
             // Comes later to prevent creating an empty file
             using var writer = new BinaryWriter(File.OpenWrite(fname));
             conversion.Write(writer);
+
+            if (level.meta.contentPackage != null)
+            {
+                ConsoleHelper.LogInfo("Extracting PBPL assets and reassigning packages inside EBPL instance...");
+                var fileEntries = ExtractorService.FullPBPLExtraction(level, true, null, targetDir);
+                // Updates every filepath to use its own id
+                var entries = conversion.data.meta.contentPackage.entries;
+                if (entries.Count < fileEntries.Count) // If the original entries is lower than what was exported, something is missing and needs to be corrected
+                {
+                    entries = new(fileEntries.Count); // Make a new count
+                    for (int i = 0; i < entries.Count; i++) entries[i] = new(fileEntries[i].Item1, Path.GetFileNameWithoutExtension(fileEntries[i].Item2), fileEntries[i].Item2); // Reinitialize all the entries with the basic data
+                }
+                else
+                {
+                    // Now reassign the filePaths
+                    for (int i = 0; i < entries.Count; i++)
+                    {
+                        entries[i].filePath = fileEntries[i].Item2;
+                        entries[i].data = null; // Use the file path and clean up data to not use it
+                    }
+                }
+                ConsoleHelper.LogWarn("Reminder: the extracted assets must be moved to their respective folders inside \"Level Studio\\User Content\" in order to export the level properly.");
+            }
 
             ConsoleHelper.LogSuccess($"PBPL file converted to {Path.GetFileName(fname)}");
         }
