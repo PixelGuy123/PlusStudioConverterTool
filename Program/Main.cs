@@ -60,7 +60,7 @@ namespace PlusStudioConverterTool
 ╚═╝     ╚══════╝ ╚═════╝ ╚══════╝    ╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝      ╚═════╝   ╚═╝                                                                                                                                                                                                                                                                                                            
 			");
 
-			Console.WriteLine("Plus Studio Converter Tool. Made by PixelGuy. v2.0.0");
+			Console.WriteLine("Plus Studio Converter Tool. Made by PixelGuy. v2.0.1");
 			Console.WriteLine("Plus Level Editor and Plus Level Studio were made by MissingTextureMan101.");
 			ConfigurationHandler.InitializeConfigFile();
 

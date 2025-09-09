@@ -186,7 +186,7 @@ internal static partial class Converters
 				// Check if the wall bit is set for this direction
 				if ((cell.walls & (1 << i)) != 0)
 				{
-					var neighborPos = currentPos + dir.ToIntVector2();
+					var neighborPos = currentPos + dir.ToNETIntVector2();
 					// If the neighbor is also part of the room, this is an internal wall.
 					if (cellPositions.Contains(neighborPos))
 					{
