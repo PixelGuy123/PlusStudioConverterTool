@@ -2,7 +2,6 @@
 using PlusLevelLoader;
 using PlusLevelStudio;
 using PlusLevelStudio.Editor;
-using PlusStudioConverterTool.Extensions;
 using PlusStudioConverterTool.Models;
 using PlusStudioConverterTool.Services;
 using PlusStudioLevelFormat;
@@ -49,6 +48,7 @@ internal static partial class Converters
 
 		// 3. Set up rooms. The hall (ID 1) is created by default. We add our new room, which will get ID 2.
 		ConsoleHelper.LogConverterInfo($"Setting up room of type \'{roomAsset.type}\'..");
+
 		var newRoom = new EditorRoom(roomAsset.type, new TextureContainer()
 		{
 			wall = roomAsset.textureContainer.wall,

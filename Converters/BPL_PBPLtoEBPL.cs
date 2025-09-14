@@ -1,6 +1,5 @@
 using PlusLevelStudio;
 using PlusLevelStudio.Editor;
-using PlusStudioConverterTool.Extensions;
 using PlusStudioConverterTool.Models;
 using PlusStudioConverterTool.Services;
 using PlusStudioLevelFormat;
@@ -275,12 +274,17 @@ internal static partial class Converters
 
         // 9. Finalize the file container with default editor metadata.
         fileContainer.data = newData;
+
+        string[] barTools = new string[9];
+        for (int i = 0; i < barTools.Length; i++)
+            barTools[i] = string.Empty;
+
         fileContainer.meta = new EditorFileMeta
         {
             cameraPosition = Vector3.zero,
             cameraRotation = Quaternion.identity,
             editorMode = editorMode,
-            toolbarTools = ["", "", "", "", "", "", "", "", ""]
+            toolbarTools = barTools
         };
 
         ConsoleHelper.LogInfo("Conversion to EBPL format completed.");
@@ -296,6 +300,7 @@ internal static partial class Converters
             case "halldoor":
             case "swingdoor":
             case "facultyonlydoor":
+            case "regionlockdowndoors":
                 return ConvertHallDoorStructure(info);
             case "halldoor_button":
                 return ConvertHallDoorWithButtonsOrLeversStructure<HallDoorStructureLocationWithButtons>(info);
@@ -311,10 +316,14 @@ internal static partial class Converters
                 return ConvertSteamValveStructure(info);
             case "vent":
                 return ConvertVentStructure(info);
+            case "teleporters":
+                return ConvertTeleporterStructure(info);
+            case "region":
+                return ConvertRegionStructure(info, data);
             case "factorybox":
                 return new FactoryBoxStructureLocation() { type = info.type };
             default:
-                ConsoleHelper.LogWarn($"Structure of type '{info.type}' found but conversion is not yet implemented.");
+                ConsoleHelper.LogWarn($"Structure of type '{info.type}' found but conversion is not yet implemented. This structure will be missing from the level.");
                 return null;
         }
     }
@@ -332,6 +341,7 @@ internal static partial class Converters
         }
         return structure;
     }
+
 
     private static T ConvertHallDoorWithButtonsOrLeversStructure<T>(StructureInfo info) where T : HallDoorStructureLocationWithButtons, new()
     {
@@ -403,6 +413,52 @@ internal static partial class Converters
                 belt.buttonIndex = -1;
 
         return structure;
+    }
+
+    private static RegionStructureLocation ConvertRegionStructure(StructureInfo info, EditorLevelData data)
+    {
+        var regionStructLoc = new RegionStructureLocation() { type = info.type };
+        for (int i = 0; i < info.data.Count; i++)
+        {
+            regionStructLoc.regions.Add(new RegionLocation()
+            {
+                id = info.data[i].position.z, // For some reason, it's assigned in a position. 
+                room = data.rooms[info.data[i].position.x],
+                myStructure = regionStructLoc
+            });
+        }
+        return regionStructLoc;
+    }
+    private static TeleporterStructureLocation ConvertTeleporterStructure(StructureInfo info)
+    {
+        var teleporterStructLoc = new TeleporterStructureLocation() { type = info.type };
+        for (int i = 0; i < info.data.Count; i++) // Basically 3 StructureDataInfos are added per Teleporter, so read all three
+        {
+            // 1 - Room ID (Useless, so can be skipped)
+            // 2 - Position of the teleporterLocation / data = direction as integer
+            // 3 - position of the machine / data = direction as integer
+
+            TeleporterLocation teleporterLoc = new();
+            i++; // Skips the room ID thing, since it's unused here
+
+            // We get to 2 here
+            teleporterLoc.position = new(info.data[i].position.x.ConvertToFloatNoRecast(), info.data[i].position.z.ConvertToFloatNoRecast()); // pos
+            teleporterLoc.direction = info.data[i].data.ConvertToFloatNoRecast(); // int bit struct, whatever the editor calls this lol
+
+            i++; // Goes to 3: machine
+
+            // Do the machine thing
+            teleporterLoc.machine = new()
+            {
+                position = new(info.data[i].position.x.ConvertToFloatNoRecast(), info.data[i].position.z.ConvertToFloatNoRecast()),
+                direction = info.data[i].data.ConvertToFloatNoRecast()
+            };
+
+            // Assign teleporter location to the structure
+            teleporterLoc.myStructure = teleporterStructLoc;
+            teleporterStructLoc.teleporters.Add(teleporterLoc);
+        }
+        return teleporterStructLoc;
     }
 
     private static PowerLeverStructureLocation ConvertPowerLeverStructure(StructureInfo info, EditorLevelData data)

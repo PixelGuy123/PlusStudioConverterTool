@@ -15,12 +15,13 @@ internal static partial class Converters
         var roomAssets = new List<BaldiRoomAsset>();
 
         ConsoleHelper.LogInfo("Analyzing each room...");
+        bool onlyHallways = !level.rooms.Exists(room => room.type != "hall"); // If there's any room with a different type, there's not only hallways
         for (int i = 0; i < level.rooms.Count; i++)
         {
             var roomProperties = level.rooms[i];
             ushort currentRoomId = (ushort)(i + 1); // Room IDs are 1-based
 
-            if (roomProperties.type == "hall") continue;
+            if (!onlyHallways && roomProperties.type == "hall") continue;
             ConsoleHelper.LogConverterInfo($"Checking room {currentRoomId} ({roomProperties.type})...");
 
             string floor = roomProperties.textures.floor;

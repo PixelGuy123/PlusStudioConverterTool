@@ -1,5 +1,4 @@
-﻿using PlusLevelStudio;
-using PlusStudioConverterTool.Extensions;
+﻿using PlusStudioConverterTool.Extensions;
 using PlusStudioConverterTool.Services;
 
 namespace PlusStudioConverterTool
@@ -60,7 +59,7 @@ namespace PlusStudioConverterTool
 ╚═╝     ╚══════╝ ╚═════╝ ╚══════╝    ╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝      ╚═════╝   ╚═╝                                                                                                                                                                                                                                                                                                            
 			");
 
-			Console.WriteLine("Plus Studio Converter Tool. Made by PixelGuy. v2.0.1");
+			Console.WriteLine("Plus Studio Converter Tool. Made by PixelGuy. v2.0.2");
 			Console.WriteLine("Plus Level Editor and Plus Level Studio were made by MissingTextureMan101.");
 			ConfigurationHandler.InitializeConfigFile();
 
