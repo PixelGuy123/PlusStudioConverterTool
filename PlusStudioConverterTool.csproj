@@ -25,15 +25,15 @@
 	 </Reference>
 	 
 	 <Reference Include="BaldiLevelEditor">
-	 <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\FullyAccessibleEditor\BaldiLevelEditor.dll</HintPath>
+	 <HintPath>References\BaldiLevelEditor.dll</HintPath>
 	 </Reference>
 	 
 	 <Reference Include="PlusLevelFormat">
-	   <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\editor\PlusLevelFormat.dll</HintPath>
+	   <HintPath>References\PlusLevelFormat.dll</HintPath>
 	 </Reference>
 	 
 	 <Reference Include="PlusLevelLoader">
-	   <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Baldi's Basics Plus\BepInEx\editor\PlusLevelLoader.dll</HintPath>
+	   <HintPath>References\PlusLevelLoader.dll</HintPath>
 	 </Reference>
 
    <Reference Include="PlusLevelStudio">
