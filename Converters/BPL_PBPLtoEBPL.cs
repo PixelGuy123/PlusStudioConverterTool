@@ -275,16 +275,12 @@ internal static partial class Converters
         // 9. Finalize the file container with default editor metadata.
         fileContainer.data = newData;
 
-        string[] barTools = new string[9];
-        for (int i = 0; i < barTools.Length; i++)
-            barTools[i] = string.Empty;
-
         fileContainer.meta = new EditorFileMeta
         {
             cameraPosition = Vector3.zero,
             cameraRotation = Quaternion.identity,
             editorMode = editorMode,
-            toolbarTools = barTools
+            toolbarTools = GetEditorDefaultTools(editorMode)
         };
 
         ConsoleHelper.LogInfo("Conversion to EBPL format completed.");

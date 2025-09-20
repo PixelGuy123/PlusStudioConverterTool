@@ -47,6 +47,7 @@ namespace PlusStudioConverterTool
 
 			// ********* Only-once setup ***********
 			AltLevelLoaderExtensions.InitializeSettings();
+			Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? Version;
 
 		start:
 			Console.Clear();
@@ -59,7 +60,7 @@ namespace PlusStudioConverterTool
 ╚═╝     ╚══════╝ ╚═════╝ ╚══════╝    ╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝      ╚═════╝   ╚═╝                                                                                                                                                                                                                                                                                                            
 			");
 
-			Console.WriteLine("Plus Studio Converter Tool. Made by PixelGuy. v2.0.2");
+			Console.WriteLine($"Plus Studio Converter Tool. Made by PixelGuy. v{Version}");
 			Console.WriteLine("Plus Level Editor and Plus Level Studio were made by MissingTextureMan101.");
 			ConfigurationHandler.InitializeConfigFile();
 
@@ -106,5 +107,7 @@ namespace PlusStudioConverterTool
 			Console.WriteLine("====\nPress any key to quit...");
 			Console.ReadKey(true);
 		}
+
+		public static Version Version = new();
 	}
 }

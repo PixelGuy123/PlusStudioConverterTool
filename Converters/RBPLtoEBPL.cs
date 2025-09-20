@@ -256,36 +256,48 @@ internal static partial class Converters
 		ConsoleHelper.LogConverterInfo("Converting technical data from lists into markers...");
 		foreach (var pos in roomAsset.potentialDoorPositions)
 		{
-			newData.structures.Add(new PotentialDoorLocation() { position = pos.ToInt(), type = "technical_potentialdoor" });
+			newData.markers.Add(new PotentialDoorLocation() { position = pos.ToInt(), type = "potentialdoor" });
 		}
 		foreach (var pos in roomAsset.forcedDoorPositions)
 		{
-			newData.structures.Add(new ForcedDoorLocation() { position = pos.ToInt(), type = "technical_forceddoor" });
+			newData.markers.Add(new ForcedDoorLocation() { position = pos.ToInt(), type = "forceddoor" });
 		}
 		foreach (var pos in roomAsset.standardLightCells)
 		{
-			newData.structures.Add(new RoomLightLocation() { position = pos.ToInt(), type = "technical_lightspot" });
+			newData.markers.Add(new RoomLightLocation() { position = pos.ToInt(), type = "lightspot" });
+		}
+		foreach (var pos in roomAsset.secretCells)
+		{
+			newData.markers.Add(new HiddenCellMarker() { position = pos.ToInt(), type = "hidden" });
 		}
 		ConsoleHelper.LogConverterInfo($"{roomAsset.potentialDoorPositions.Count} potential door position markers created.");
 		ConsoleHelper.LogConverterInfo($"{roomAsset.forcedDoorPositions.Count} forced door position markers created.");
 		ConsoleHelper.LogConverterInfo($"{roomAsset.standardLightCells.Count} light markers created.");
+		ConsoleHelper.LogConverterInfo($"{roomAsset.secretCells.Count} hidden cells created.");
 
 		// 8. Add UnsafeCellLocation markers for any cell not marked as safe for entities or events.
 		ConsoleHelper.LogConverterInfo("Marking unsafe cells...");
 		var entitySafePositions = new HashSet<IntVector2>(roomAsset.entitySafeCells.Select(p => p.ToInt()));
 		var eventSafePositions = new HashSet<IntVector2>(roomAsset.eventSafeCells.Select(p => p.ToInt()));
-		int counter = 0;
+		int unsafeEntityCounter = 0, unsafeEventCounter = 0;
 		foreach (var cell in roomAsset.cells)
 		{
 			var pos = cell.position.ToInt();
-			if (!entitySafePositions.Contains(pos) && !eventSafePositions.Contains(pos))
+			if (!entitySafePositions.Contains(pos))
 			{
-				newData.structures.Add(new UnsafeCellLocation() { position = pos, type = "technical_nosafe" });
-				counter++;
+				newData.markers.Add(new EntityUnsafeCellLocation() { position = pos });
+				unsafeEntityCounter++;
+			}
+
+			if (!eventSafePositions.Contains(pos))
+			{
+				newData.markers.Add(new EventUnsafeCellLocation() { position = pos });
+				unsafeEventCounter++;
 			}
 		}
 
-		ConsoleHelper.LogConverterInfo($"{counter} unsafe cell markers created.");
+		ConsoleHelper.LogConverterInfo($"{unsafeEntityCounter} unsafe entity cell markers created.");
+		ConsoleHelper.LogConverterInfo($"{unsafeEventCounter} unsafe event cell markers created.");
 
 		// 9. Process basic objects, converting special marker objects into their corresponding structures or placements.
 		ConsoleHelper.LogConverterInfo("Processing objects and converting special markers...");
@@ -308,17 +320,12 @@ internal static partial class Converters
 		ConsoleHelper.LogConverterInfo($"Processed {newData.objects.Count} objects and {newData.structures.Count} structures.");
 		ConsoleHelper.LogInfo("Conversion completed!");
 
-		// file container meta stuff
-		string[] toolBars = new string[9];
-		for (int i = 0; i < toolBars.Length; i++)
-			toolBars[i] = string.Empty;
-
 		fileContainer.meta = new()
 		{
 			cameraPosition = Vector3.zero,
 			cameraRotation = Quaternion.identity,
 			editorMode = editorMode,
-			toolbarTools = toolBars
+			toolbarTools = GetEditorDefaultTools(editorMode)
 		};
 		fileContainer.data = newData;
 

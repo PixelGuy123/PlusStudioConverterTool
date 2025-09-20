@@ -8,6 +8,13 @@ namespace PlusStudioConverterTool.Converters;
 
 internal static partial class Converters
 {
+    public static string[] GetEditorDefaultTools(string editorMode) => editorMode switch
+    {
+        "full" => ["room_hall", "room_class", "room_faculty", "room_office", "light_fluorescent", "door_swinging", "door_standard", "merge", "delete"],
+        "compliant" => ["room_hall", "room_class", "room_faculty", "room_office", "light_fluorescent", "door_swinging", "door_standard", "merge", "delete"],
+        "room" => ["room_class", "room_faculty", "room_office", "technical_potentialdoor", "technical_lightspot", "marker_eventunsafe", "itemspawn_100", "merge", "delete"],
+        _ => [string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty]
+    };
     static MarkerLocation? TryConvertToMarker(this BasicObjectInfo obj, EditorLevelData levelData) => obj.prefab switch
     {
         "matchballoon" => new MatchBalloonMarker() { position = obj.position.ToUnity(), type = obj.prefab },

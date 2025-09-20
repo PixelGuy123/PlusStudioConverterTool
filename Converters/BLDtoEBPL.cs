@@ -226,16 +226,13 @@ internal static partial class Converters
 
         // EditorFileMeta setup
         ConsoleHelper.LogConverterInfo("Adding EditorFileMeta...");
-        string[] toolBars = new string[9];
-        for (int i = 0; i < toolBars.Length; i++)
-            toolBars[i] = string.Empty;
 
         fileContainer.meta = new()
         {
             cameraPosition = Vector3.zero,
             cameraRotation = Quaternion.identity,
             editorMode = editorMode,
-            toolbarTools = toolBars
+            toolbarTools = GetEditorDefaultTools(editorMode)
         };
 
         // ****** Extra *******
