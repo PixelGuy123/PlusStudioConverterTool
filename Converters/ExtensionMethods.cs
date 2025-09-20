@@ -21,12 +21,13 @@ internal static partial class Converters
         _ => null,
     };
 
-    static bool UpdateOldAssetName(ref string assetName, LevelFieldType lvlFieldType)
+    static bool UpdateOldAssetName(ref string assetName, LevelFieldType lvlFieldType, bool ignoreExclusion = false)
     {
         if (ConfigurationHandler.filterKeyPairs.TryGetValue(lvlFieldType, out var filterObj))
         {
-            if (filterObj.exclusions.Contains(assetName))
+            if (!ignoreExclusion && filterObj.exclusions.Contains(assetName))
             {
+                assetName = string.Empty;
                 ConsoleHelper.LogWarn($"{lvlFieldType}: Removed an asset named '{assetName}'.");
                 return false;
             }
@@ -125,6 +126,15 @@ internal static partial class Converters
         PlusLevelFormat.PlusDirection.East => PlusLevelFormat.PlusDirection.West,
         PlusLevelFormat.PlusDirection.South => PlusLevelFormat.PlusDirection.North,
         _ => PlusLevelFormat.PlusDirection.Null
+    };
+
+    static PlusStudioLevelFormat.PlusDirection GetOpposite(this PlusStudioLevelFormat.PlusDirection dir) => dir switch
+    {
+        PlusStudioLevelFormat.PlusDirection.North => PlusStudioLevelFormat.PlusDirection.South,
+        PlusStudioLevelFormat.PlusDirection.West => PlusStudioLevelFormat.PlusDirection.East,
+        PlusStudioLevelFormat.PlusDirection.East => PlusStudioLevelFormat.PlusDirection.West,
+        PlusStudioLevelFormat.PlusDirection.South => PlusStudioLevelFormat.PlusDirection.North,
+        _ => PlusStudioLevelFormat.PlusDirection.Null
     };
 
     private static Direction ToDirection(this IntVector2 vec)

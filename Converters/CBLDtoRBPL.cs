@@ -21,7 +21,7 @@ internal static partial class Converters
             var roomProperties = level.rooms[i];
             ushort currentRoomId = (ushort)(i + 1); // Room IDs are 1-based
 
-            if (!onlyHallways && roomProperties.type == "hall") continue;
+            if ((onlyHallways && roomProperties.type == "hall") || !UpdateOldAssetName(ref roomProperties.type, LevelFieldType.RoomCategory)) continue;
             ConsoleHelper.LogConverterInfo($"Checking room {currentRoomId} ({roomProperties.type})...");
 
             string floor = roomProperties.textures.floor;

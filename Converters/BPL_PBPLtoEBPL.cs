@@ -44,6 +44,11 @@ internal static partial class Converters
         newData.rooms.Clear();
         foreach (var roomInfo in level.rooms)
         {
+            // If False, the room is removed
+            if (!UpdateOldAssetName(ref roomInfo.type, LevelFieldType.RoomCategory))
+                continue;
+
+
             var newRoom = new EditorRoom(roomInfo.type, new TextureContainer(roomInfo.textureContainer));
             string renamedType = newRoom.roomType;
             UpdateOldAssetName(ref renamedType, LevelFieldType.RoomTexture);
@@ -230,14 +235,17 @@ internal static partial class Converters
                 foreach (var dir in tile.DirsFromTile(checkForWalls))
                 {
                     var vec = dir.ToByteVector2();
+                    var inverseDir = dir.GetOpposite();
                     // Console.WriteLine($"Checking wall at ({x},{y}) as placed in dir: {dir} with offset: ({vec.Item1},{vec.Item2})"); // 3 walls?? Check with another level I guess
+                    int oldX = x, oldY = y;
                     x += vec.Item1;
                     y += vec.Item2;
                     // Console.WriteLine($"Normal ID: {tile.roomId} | OffsetID: {level.cells[x, y].roomId}");
 
                     if (level.cells.InBounds(x, y) &&
                     level.cells[x, y].roomId != 0 && // Must be non-zero to actually count as a room, not void
-                    (level.cells[x, y].roomId == tile.roomId == checkForWalls)) // If checkForWalls, it should expect the tiles to be from the same room id
+                    (level.cells[x, y].roomId == tile.roomId == checkForWalls) && // If checkForWalls, it should expect the tiles to be from the same room id
+                    !level.doors.Exists(door => (door.direction == dir || door.direction == inverseDir) && ((door.position.x == x && door.position.y == y) || (door.position.x == oldX && door.position.y == oldY)))) // Checks if there isn't any door located on the wall/non-wall to prevent placing wall removers unnecessarily
                     {
                         ConsoleHelper.LogConverterInfo($"Marked {(checkForWalls ? "wall" : "wall-remover")} at ({tile.position.x},{tile.position.y}) as placed in dir: {dir}");
                         newData.walls.Add(new() { direction = (Direction)dir, position = new(tile.position.x, tile.position.y), wallState = checkForWalls }); // converts to int which is equal to the PlusDirection

@@ -24,6 +24,7 @@ internal static partial class Converters
         ConsoleHelper.LogConverterInfo("Initializing EditorLevel...");
         ConsoleHelper.LogConverterInfo($"Size of level: {level.tiles.GetLength(0)},{level.tiles.GetLength(1)}");
 
+        ConsoleHelper.LogConverterInfo("Converting doors...");
         foreach (var door in level.doors)
         {
             string renamed = door.type;
@@ -34,6 +35,8 @@ internal static partial class Converters
                 newLevel.doors.Add(newDoor);
             }
         }
+        ConsoleHelper.LogConverterInfo($"{newLevel.doors.Count} doors converted!");
+        ConsoleHelper.LogConverterInfo("Converting windows...");
         foreach (var window in level.windows)
         {
             string renamed = window.type;
@@ -44,6 +47,8 @@ internal static partial class Converters
                 newLevel.windows.Add(newWindow);
             }
         }
+        ConsoleHelper.LogConverterInfo($"{newLevel.windows.Count} windows converted!");
+        ConsoleHelper.LogConverterInfo("Converting exits...");
         foreach (var exit in level.exits)
         {
             string renamed = exit.type;
@@ -54,6 +59,8 @@ internal static partial class Converters
                 newLevel.exits.Add(newExit);
             }
         }
+        ConsoleHelper.LogConverterInfo($"{newLevel.exits.Count} exits converted!");
+        ConsoleHelper.LogConverterInfo("Converting NPCs...");
         foreach (var npc in level.npcSpawns)
         {
             string renamed = npc.type;
@@ -64,6 +71,8 @@ internal static partial class Converters
                 newLevel.npcSpawns.Add(newNpc);
             }
         }
+        ConsoleHelper.LogConverterInfo($"{newLevel.npcSpawns.Count} NPCs converted!");
+        ConsoleHelper.LogConverterInfo("Converting tiled objects...");
         foreach (var prefab in level.tiledPrefabs)
         {
             string renamed = prefab.type;
@@ -74,11 +83,17 @@ internal static partial class Converters
                 newLevel.tiledPrefabs.Add(newPrefab);
             }
         }
-
+        ConsoleHelper.LogConverterInfo($"{newLevel.tiledPrefabs.Count} tiled objects converted!");
+        ConsoleHelper.LogConverterInfo("Converting rooms...");
+        newLevel.rooms.Clear(); // to be SUPER sure hall room isn't added twice
         for (int i = 0; i < level.rooms.Count; i++)
         {
             var oldRoom = level.rooms[i];
+            if (!UpdateOldAssetName(ref oldRoom.type, LevelFieldType.RoomCategory))
+                continue;
+
             var newRoom = new RoomProperties { type = oldRoom.type };
+            ConsoleHelper.LogConverterInfo($"Converting room of type {oldRoom.type}...");
 
             string floor = oldRoom.textures.floor;
             string wall = oldRoom.textures.wall;
@@ -128,6 +143,7 @@ internal static partial class Converters
             }
             newLevel.rooms.Add(newRoom);
         }
+        ConsoleHelper.LogConverterInfo($"{newLevel.rooms.Count} rooms converted!");
 
         ConsoleHelper.LogConverterInfo("Initializing tile data...");
 
@@ -145,11 +161,17 @@ internal static partial class Converters
                 foreach (var dir in tile.DirsFromTile(checkForWalls))
                 {
                     var vec = dir.ToByteVector2();
+                    var inverseDir = dir.GetOpposite();
                     //Console.WriteLine($"Checking wall at ({x},{y}) as placed in dir: {dir} with offset: ({vec.Item1},{vec.Item2})"); // 3 walls?? Check with another level I guess
+                    int oldX = x, oldY = y;
                     x += vec.Item1;
                     y += vec.Item2;
 
-                    if (level.tiles.InBounds(x, y) && level.tiles[x, y].roomId != 0 && (level.tiles[x, y].roomId == tile.roomId == checkForWalls))
+                    if (level.tiles.InBounds(x, y) &&
+                    level.tiles[x, y].roomId != 0 &&
+                    (level.tiles[x, y].roomId == tile.roomId == checkForWalls) &&
+                    !newLevel.doors.Exists(door => (door.direction == dir || door.direction == inverseDir) && ((door.position.x == x && door.position.y == y) || (door.position.x == oldX && door.position.y == oldY)))
+                    )
                     {
                         ConsoleHelper.LogConverterInfo($"Marked {(checkForWalls ? "wall" : "wall-remover")} at ({tile.position.x},{tile.position.y}) as placed in dir: {dir}");
                         newLevel.manualWalls.Add(new() { direction = dir, position = new(tile.position.x, tile.position.y), wall = checkForWalls }); // converts to int which is equal to the PlusDirection
@@ -159,6 +181,7 @@ internal static partial class Converters
                     x = tile.position.x;
                     y = tile.position.y;
                 }
+                checkForWalls = !checkForWalls;
             }
         }
 

@@ -12,5 +12,6 @@ internal enum LevelFieldType
     Door = 7,
     Window = 8,
     Exit = 9,
-    NPC = 10
+    NPC = 10,
+    RoomCategory = 11
 }

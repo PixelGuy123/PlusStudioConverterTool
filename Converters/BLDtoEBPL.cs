@@ -38,25 +38,39 @@ internal static partial class Converters
         newData.rooms.Clear();
         foreach (var oldRoom in level.rooms)
         {
+            // If False, the room is removed
+            if (!UpdateOldAssetName(ref oldRoom.type, LevelFieldType.RoomCategory))
+                continue;
+
+            ConsoleHelper.LogConverterInfo($"Converting room of type {oldRoom.type}.");
             string renamedFloor = oldRoom.textures.floor;
             string renamedWall = oldRoom.textures.wall;
             string renamedCeiling = oldRoom.textures.ceiling;
             UpdateOldAssetName(ref renamedFloor, LevelFieldType.RoomTexture);
             UpdateOldAssetName(ref renamedWall, LevelFieldType.RoomTexture);
             UpdateOldAssetName(ref renamedCeiling, LevelFieldType.RoomTexture);
+            // ConsoleHelper.LogInfo($"Room texture set: {renamedFloor} | {renamedWall} | {renamedCeiling}");
 
             var newRoom = new EditorRoom(oldRoom.type, new PlusStudioLevelFormat.TextureContainer(
                 renamedFloor,
                 renamedWall,
                 renamedCeiling
                 ));
-            newRoom.activity = oldRoom.activity == null ? null : new()
+            // Check if the room has an activity
+            if (oldRoom.activity != null)
             {
-                direction = oldRoom.activity.direction.ToStandard(),
-                position = oldRoom.activity.position.ToUnity(),
-                type = oldRoom.activity.activity,
-                myRoom = newRoom
-            };
+                var hasActivity = UpdateOldAssetName(ref oldRoom.activity.activity, LevelFieldType.Activity); // Update activity name
+                if (hasActivity) // In case it is marked as exclusion or not
+                {
+                    newRoom.activity = new()
+                    {
+                        direction = oldRoom.activity.direction.ToStandard(),
+                        position = oldRoom.activity.position.ToUnity(),
+                        type = oldRoom.activity.activity,
+                        myRoom = newRoom
+                    };
+                }
+            }
             newData.rooms.Add(newRoom);
         }
         ConsoleHelper.LogConverterInfo($"{newData.rooms.Count} rooms loaded in total!");
@@ -64,7 +78,7 @@ internal static partial class Converters
         // 4. Convert areas.
         ConsoleHelper.LogConverterInfo("Converting BLD to EBPL areas...");
         newData.areas.Clear();
-        List<RectCellArea> newCellAreas = new List<RectCellArea>();
+        List<RectCellArea> newCellAreas = [];
         foreach (var oldArea in level.areas)
         {
             if (oldArea is AreaData areaData)
@@ -90,7 +104,7 @@ internal static partial class Converters
             string renamedDoor = oldDoor.type;
             if (UpdateOldAssetName(ref renamedDoor, LevelFieldType.Door))
             {
-                newData.doors.Add(new PlusLevelStudio.Editor.DoorLocation()
+                newData.doors.Add(new DoorLocation()
                 {
                     type = renamedDoor,
                     position = new IntVector2(oldDoor.position.x, oldDoor.position.y),
@@ -108,7 +122,7 @@ internal static partial class Converters
             string renamedWindow = oldWindow.type;
             if (UpdateOldAssetName(ref renamedWindow, LevelFieldType.Window))
             {
-                newData.windows.Add(new PlusLevelStudio.Editor.WindowLocation()
+                newData.windows.Add(new WindowLocation()
                 {
                     type = renamedWindow,
                     position = new IntVector2(oldWindow.position.x, oldWindow.position.y),
@@ -170,13 +184,13 @@ internal static partial class Converters
 
         // Exits and determine spawn point
         ConsoleHelper.LogConverterInfo("Converting exits...");
-        PlusLevelStudio.Editor.ExitLocation? spawnExit = null;
+        ExitLocation? spawnExit = null;
         foreach (var oldExit in level.exits)
         {
             string renamedExit = oldExit.type;
             if (UpdateOldAssetName(ref renamedExit, LevelFieldType.Exit))
             {
-                var newExit = new PlusLevelStudio.Editor.ExitLocation()
+                var newExit = new ExitLocation()
                 {
                     type = renamedExit,
                     position = new IntVector2(oldExit.position.x, oldExit.position.y),
@@ -221,6 +235,7 @@ internal static partial class Converters
                 });
             }
         }
+        ConsoleHelper.LogConverterInfo($"{newData.npcs.Count} NPCs converted!");
 
         fileContainer.data = newData;
 
@@ -241,7 +256,7 @@ internal static partial class Converters
         {
             ConsoleHelper.LogConverterInfo("Generating artificial lighting...");
             int maxDistance = newData.lightGroups[0].strength - 1;
-            int counter = 0;
+            int counter = 0, lightsAdded = 0;
             for (int x = 0; x < newData.mapSize.x; x++)
             {
                 for (int y = 0; y < newData.mapSize.z; y++)
@@ -253,6 +268,7 @@ internal static partial class Converters
                         counter++;
                         if (counter % maxDistance == 0)
                         {
+                            lightsAdded++;
                             newData.lights.Add(new()
                             {
                                 lightGroup = 0,
@@ -263,6 +279,7 @@ internal static partial class Converters
                     }
                 }
             }
+            ConsoleHelper.LogConverterInfo($"Generated {lightsAdded} light objects!");
         }
         else
         {

@@ -19,6 +19,7 @@ internal static partial class Converters
 
 		const string editorMode = "rooms";
 
+
 		// 1. Determine map size from the room's cells to create a fitting canvas.
 		ConsoleHelper.LogConverterInfo("Calculating map size from room cells...");
 		int maxX = 0;
@@ -48,6 +49,8 @@ internal static partial class Converters
 
 		// 3. Set up rooms. The hall (ID 1) is created by default. We add our new room, which will get ID 2.
 		ConsoleHelper.LogConverterInfo($"Setting up room of type \'{roomAsset.type}\'..");
+		if (!UpdateOldAssetName(ref roomAsset.type, LevelFieldType.RoomCategory, true))
+			ConsoleHelper.LogWarn("An exclusion was detected from a JSON-Filter, but was ignored.");
 
 		var newRoom = new EditorRoom(roomAsset.type, new TextureContainer()
 		{
