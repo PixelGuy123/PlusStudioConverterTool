@@ -8,12 +8,12 @@ namespace PlusStudioConverterTool
 	{
 		// Bool: Indicate whether to clean up the args or not
 		// Bool: indicates whether to prompt restart tool or directly restart the tool (false to direct restart)
-		static (bool, bool) ContentPackageExtractorField(ref string[] args)
+		static (bool, bool) EBPLFilterField(ref string[] args)
 		{
 			while (true)
 			{
-				Console.WriteLine("Welcome to the Content Package Extractor tool!");
-				Console.WriteLine("If you\'ve got any PBPL files and want to extract their embedded assets, you can use this tool for this!");
+				Console.WriteLine("Welcome to the EBPL Filter tool!");
+				Console.WriteLine("If you want to run the JSON-Filters through a EBPL file, you can do it through this tool.\nIt\'ll return back a filtered version of the EBPL file.");
 				// 1) Get the right action from user
 				List<string>? inputs = null;
 				if (args.Length != 0) // If the files were carried within the program, it'll detect it earlier
@@ -26,7 +26,7 @@ namespace PlusStudioConverterTool
 
 				// Select a specific extractor, since both files have different encodings
 				var optionTuple = ConsoleHelper.RetrieveUserSelection("Here\'s a list of the available modes in this tool.",
-					"PBPL Extractor",
+					"EBPL Filter",
 					"Exit"
 					);
 
@@ -36,7 +36,7 @@ namespace PlusStudioConverterTool
 				// Get the right extension
 				string extension = optionTuple.Item1 switch
 				{
-					1 => ".pbpl",
+					1 => ".ebpl",
 					_ => string.Empty // Should never happen technically
 				};
 
@@ -67,14 +67,8 @@ namespace PlusStudioConverterTool
 					return (false, true);
 				}
 				// Get an export folder, then do the conversion setup
-				var exportFolder = ConsoleHelper.PromptForExportFolder(true, "An export folder is required to put all the extracted assets inside!");
-				if (string.IsNullOrEmpty(exportFolder))
-				{
-					ConsoleHelper.LogError("Invalid export folder provided. Exiting.");
-					return (false, true);
-				}
-
-				ExtractorService.ExtractFiles(files, exportFolder);
+				var exportFolder = ConsoleHelper.PromptForExportFolder(false);
+				ConverterService.CleanUpEBPLFiles(files, exportFolder);
 				return (true, true);
 			}
 		}

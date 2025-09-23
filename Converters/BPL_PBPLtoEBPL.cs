@@ -29,7 +29,6 @@ internal static partial class Converters
             initialRandomEventGap = level.initialRandomEventGap,
             minRandomEventGap = level.minRandomEventGap,
             maxRandomEventGap = level.maxRandomEventGap,
-            randomEvents = [.. level.randomEvents],
             meta = new PlayableLevelMeta() // Use provided meta or create a default one.
             {
                 name = level.levelTitle,
@@ -39,6 +38,14 @@ internal static partial class Converters
             }
         };
 
+        // 1.5 Random Events here
+        for (int i = 0; i < level.randomEvents.Count; i++)
+        {
+            string randomEv = level.randomEvents[i];
+            if (!UpdateOldAssetName(ref randomEv, LevelFieldType.RandomEvent)) continue;
+            newData.randomEvents.Add(randomEv);
+        }
+
         // 2. Convert rooms and their contained objects.
         ConsoleHelper.LogConverterInfo("Converting rooms and their objects...");
         newData.rooms.Clear();
@@ -47,7 +54,6 @@ internal static partial class Converters
             // If False, the room is removed
             if (!UpdateOldAssetName(ref roomInfo.type, LevelFieldType.RoomCategory))
                 continue;
-
 
             var newRoom = new EditorRoom(roomInfo.type, new TextureContainer(roomInfo.textureContainer));
             string renamedType = newRoom.roomType;
@@ -270,17 +276,50 @@ internal static partial class Converters
         }
         ConsoleHelper.LogConverterInfo($"{newData.walls.Count} manual walls detected.");
 
-        // 8. Reverse-engineer structures from their compiled data.
+        // 8. Add necessary item markers
+        int unsafeEntityCounter = 0, unsafeEventCounter = 0, secretCellCounter = 0;
+        ConsoleHelper.LogConverterInfo("Marking unsafe cells...");
+        for (int x = 0; x < level.levelSize.x; x++)
+        {
+            for (int y = 0; y < level.levelSize.y; y++)
+            {
+                if (level.secretCells[x, y]) // If it has secret, the rest of the markers are (presumably) calculated by the editor and, thus, shall be ignore
+                {
+                    newData.markers.Add(new HiddenCellMarker() { position = new(x, y), type = "hidden" });
+                    secretCellCounter++;
+                    continue;
+                }
+                if (!level.entitySafeCells[x, y]) // False = non-safe
+                {
+                    newData.markers.Add(new EntityUnsafeCellLocation() { position = new(x, y) });
+                    unsafeEntityCounter++;
+                }
+                if (!level.eventSafeCells[x, y])
+                {
+                    newData.markers.Add(new EventUnsafeCellLocation() { position = new(x, y) });
+                    unsafeEventCounter++;
+                }
+            }
+        }
+
+        ConsoleHelper.LogConverterInfo($"{unsafeEntityCounter} unsafe entity cell markers created.");
+        ConsoleHelper.LogConverterInfo($"{unsafeEventCounter} unsafe event cell markers created.");
+        ConsoleHelper.LogConverterInfo($"{secretCellCounter} secret cell markers created.");
+
+        // 9. Reverse-engineer structures from their compiled data.
         ConsoleHelper.LogConverterInfo("Converting structures...");
         foreach (var structureInfo in level.structures)
         {
+            if (!UpdateOldAssetName(ref structureInfo.type, LevelFieldType.Structure, ignoreRenaming: true)) // Allow exclusion from here
+                continue;
+
             StructureLocation? newStructure = ConvertStructure(structureInfo, newData);
             if (newStructure != null)
                 newData.structures.Add(newStructure);
         }
         ConsoleHelper.LogConverterInfo($"{newData.structures.Count} structures converted.");
 
-        // 9. Finalize the file container with default editor metadata.
+        // 10. Finalize the file container with default editor metadata.
         fileContainer.data = newData;
 
         fileContainer.meta = new EditorFileMeta

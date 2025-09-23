@@ -13,5 +13,6 @@ internal enum LevelFieldType
     Window = 8,
     Exit = 9,
     NPC = 10,
-    RoomCategory = 11
+    RoomCategory = 11,
+    RandomEvent = 12
 }

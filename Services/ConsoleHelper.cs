@@ -44,7 +44,9 @@ namespace PlusStudioConverterTool.Services
             }
         }
         // Retrieve an integer
-        public static int RetrieveUserNumber(int min, int max, string? promptMessage = null)
+        public static int RetrieveUserNumber(int min, int max, string? promptMessage = null) =>
+            RetrieveUserNumber(min, max, null, promptMessage);
+        public static int RetrieveUserNumber(int min, int max, int? cancelNum, string? promptMessage = null)
         {
             if (min > max || max == 0)
                 throw new ArgumentException("No options were provided for the user\'s selection input.");
@@ -58,6 +60,8 @@ namespace PlusStudioConverterTool.Services
             while (true)
             {
                 if (int.TryParse(value, out int option) && option >= min && option <= max)
+                    return option;
+                if (cancelNum == option)
                     return option;
 
                 Console.WriteLine($"Select a number between {min} and {max}:");

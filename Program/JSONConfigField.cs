@@ -9,18 +9,26 @@ namespace PlusStudioConverterTool
 		{
 			while (true)
 			{
+				Console.Clear();
 				var jsonPaths = ConfigurationHandler.configFile.jsonFilterPaths;
-				for (int i = 0; i < jsonPaths.Count; i++)
+				void LogAllJsons()
 				{
-					var fName = Path.GetFileName(jsonPaths[i]);
-					Console.WriteLine($"[{i}] \'{fName}\'");
+					for (int i = 0; i < jsonPaths.Count; i++)
+					{
+						var fName = Path.GetFileName(jsonPaths[i]);
+						Console.WriteLine($"[{i}] \'{fName}\'");
+					}
 				}
+
+				LogAllJsons();
+
 				Console.WriteLine($"There are currently loaded in {jsonPaths.Count} JSON files.");
 				var optionTuple = ConsoleHelper.RetrieveUserSelection("What do you want to do with them?",
 						"Add", // 1
 						"Remove", // 2
 						"Exit"
 						);
+				bool hasRetryed = false;
 				switch (optionTuple.Item1)
 				{
 					case 1:
@@ -37,16 +45,27 @@ namespace PlusStudioConverterTool
 						ConfigurationHandler.TryReserializeConfigFile();
 						break;
 					case 2:
-					removeOld:
-						int num = ConsoleHelper.RetrieveUserNumber(0, jsonPaths.Count - 1, "Check the JSON list logged above and select the number you want to delete. Select \'-1\' to cancel.");
+
+						if (jsonPaths.Count == 0) break;
+						removeOld:
+						if (hasRetryed)
+							LogAllJsons();
+
+						int num = ConsoleHelper.RetrieveUserNumber(0, jsonPaths.Count - 1, -1, "Check the JSON list logged above and select the number you want to delete. Select \'-1\' to cancel.");
 						if (num == -1)
 							break;
 
 						ConsoleHelper.LogSuccess($"Removed {Path.GetFileName(jsonPaths[num])} successfully!");
 						jsonPaths.RemoveAt(num);
 
-						if (ConsoleHelper.CheckIfUserInputsYOrN("Do you wish to delete another JSON from this list?"))
+						if (ConsoleHelper.CheckIfUserInputsYOrN("Do you wish to delete another JSON from this list before re-loading the filters?"))
+						{
+							hasRetryed = true;
 							goto removeOld;
+						}
+
+						ConfigurationHandler.DeserializeFilters();
+						ConfigurationHandler.TryReserializeConfigFile();
 
 						break;
 					case 3:

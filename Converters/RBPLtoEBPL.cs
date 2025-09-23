@@ -320,7 +320,7 @@ internal static partial class Converters
 		}
 
 		newData.minLightColor = Color.white; // Already adjusts to white
-		ConsoleHelper.LogConverterInfo($"Processed {newData.objects.Count} objects and {newData.structures.Count} structures.");
+		ConsoleHelper.LogConverterInfo($"Processed {newData.objects.Count} objects.");
 		ConsoleHelper.LogInfo("Conversion completed!");
 
 		fileContainer.meta = new()

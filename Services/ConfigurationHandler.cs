@@ -89,6 +89,7 @@ internal static class ConfigurationHandler
 
     static void InternalDeserializeFilters(bool log)
     {
+        filterKeyPairs.Clear();
         if (log)
             ConsoleHelper.LogInfo("Deserializing the JSONs available...");
         for (int i = 0; i < configFile.jsonFilterPaths.Count; i++)

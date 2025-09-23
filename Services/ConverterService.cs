@@ -1,6 +1,7 @@
 using BaldiLevelEditor;
 using PlusLevelFormat;
 using PlusLevelStudio;
+using PlusLevelStudio.Editor;
 using PlusStudioConverterTool.Converters;
 using PlusStudioConverterTool.Extensions;
 using PlusStudioConverterTool.Models;
@@ -77,6 +78,59 @@ namespace PlusStudioConverterTool.Services
 
             Console.WriteLine("============");
             ConsoleHelper.LogSuccess($"{files.Count} files were successfully converted!");
+        }
+
+        // Expects EBPL files
+        public static void CleanUpEBPLFiles(List<string> files, string? exportFolder)
+        {
+            const string extension = ".ebpl";
+            foreach (var file in files)
+            {
+                ConsoleHelper.LogInfo($"== Loading file: {Path.GetFileName(file)} ==\n");
+
+                if (!File.Exists(file) || Path.GetExtension(file)?.Equals(extension, StringComparison.OrdinalIgnoreCase) != true)
+                {
+                    ConsoleHelper.LogError($"Invalid file detected ({file}). Skipping.");
+                    continue;
+                }
+
+                try
+                {
+                    // Does the filtering
+                    ConsoleHelper.LogInfo("Reading EBPL level...");
+                    EditorFileContainer level;
+                    using (var reader = new BinaryReader(File.OpenRead(file)))
+                    {
+                        level = reader.ReadMindfulSafe();
+                    }
+                    var targetDir = string.IsNullOrEmpty(exportFolder) ? Path.GetDirectoryName(file) : exportFolder;
+
+                    if (string.IsNullOrEmpty(targetDir))
+                        throw new DirectoryNotFoundException("Could not determine target directory for output file.");
+
+                    string fname = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(file) + "_filtered.ebpl");
+
+                    // Ensure we don't overwrite an existing file: pick a unique filename
+                    fname = GetUniqueFilePath(fname);
+
+                    level.data.PerformFiltering();
+
+                    // Comes later to prevent creating an empty file
+                    using var writer = new BinaryWriter(File.OpenWrite(fname));
+                    level.Write(writer);
+
+                    ConsoleHelper.LogSuccess($"EBPL file filtered and stored in {Path.GetFileName(fname)}");
+                }
+                catch (Exception ex)
+                {
+                    ConsoleHelper.LogError($"Failed to filter file ({file}).");
+                    ConsoleHelper.LogError(ex.ToString());
+                    return;
+                }
+            }
+
+            Console.WriteLine("============");
+            ConsoleHelper.LogSuccess($"{files.Count} files were successfully filtered!");
         }
 
         private static void ConvertCBLDtoBLDFiles(string file, string? exportFolder, out string fname, ConversionSettings? settings)

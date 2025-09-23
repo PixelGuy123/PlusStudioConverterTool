@@ -1,1 +1,8 @@
-{"jsonFilterPaths":["C:\\Users\\JV\\OneDrive\\Documentos\\GitHub\\PlusStudioConverterTool\\FilterTextureSample.json","C:\\Users\\JV\\OneDrive\\Documentos\\GitHub\\PlusStudioConverterTool\\FilterObjectSample.json","C:\\Users\\JV\\OneDrive\\Documentos\\GitHub\\PlusStudioConverterTool\\FilterDoorSample.json"]}
+{
+  "jsonFilterPaths": [
+    "C:\\Users\\JV\\OneDrive\\Documentos\\GitHub\\PlusStudioConverterTool\\FilterTextureSample.json",
+    "C:\\Users\\JV\\OneDrive\\Documentos\\GitHub\\PlusStudioConverterTool\\FilterObjectSample.json",
+    "C:\\Users\\JV\\OneDrive\\Documentos\\GitHub\\PlusStudioConverterTool\\FilterDoorSample.json",
+    "C:\\Users\\JV\\OneDrive\\Documentos\\GitHub\\PlusStudioConverterTool\\bin\\Release\\net9.0\\win-x64\\publish\\ExclusionRoomExample.json"
+  ]
+}

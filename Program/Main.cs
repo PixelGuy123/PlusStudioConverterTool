@@ -75,7 +75,8 @@ namespace PlusStudioConverterTool
 			var optionTuple = ConsoleHelper.RetrieveUserSelection("Here\'s a list of the available menus to explore inside this tool.",
 					"Converter Tool", // 1
 					"Content Package Extractor", // 2
-					"JSON-Filter Settings" // 3
+					"JSON-Filter Settings", // 3
+					"EBPL Filter" // 4
 					);
 			Console.Clear();
 			switch (optionTuple.Item1)
@@ -94,6 +95,9 @@ namespace PlusStudioConverterTool
 					JSONConfigField();
 					promptRestartTool = false;
 					break;
+				case 4:
+					(emptyOutArgs, promptRestartTool) = EBPLFilterField(ref args);
+					break;
 			}
 
 
@@ -107,6 +111,7 @@ namespace PlusStudioConverterTool
 			Console.WriteLine("====\nPress any key to quit...");
 			Console.ReadKey(true);
 		}
+
 
 		public static Version Version = new();
 	}

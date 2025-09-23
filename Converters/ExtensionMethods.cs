@@ -21,17 +21,17 @@ internal static partial class Converters
         _ => null,
     };
 
-    static bool UpdateOldAssetName(ref string assetName, LevelFieldType lvlFieldType, bool ignoreExclusion = false)
+    static bool UpdateOldAssetName(ref string assetName, LevelFieldType lvlFieldType, bool ignoreExclusion = false, bool ignoreRenaming = false)
     {
         if (ConfigurationHandler.filterKeyPairs.TryGetValue(lvlFieldType, out var filterObj))
         {
             if (!ignoreExclusion && filterObj.exclusions.Contains(assetName))
             {
-                assetName = string.Empty;
                 ConsoleHelper.LogWarn($"{lvlFieldType}: Removed an asset named '{assetName}'.");
+                assetName = string.Empty;
                 return false;
             }
-            if (filterObj.replacements.TryGetValue(assetName, out var newAssetName))
+            if (!ignoreRenaming && filterObj.replacements.TryGetValue(assetName, out var newAssetName))
             {
                 ConsoleHelper.LogWarn($"{lvlFieldType}: Renamed an asset named '{assetName}' to '{newAssetName}'.");
                 assetName = newAssetName;
