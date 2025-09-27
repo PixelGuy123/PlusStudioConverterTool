@@ -12,7 +12,7 @@ internal static class ConfigurationHandler
     // marker
     static bool hasStartedConfigFile = false;
     // public stuff
-    public static Dictionary<LevelFieldType, FilterObject> filterKeyPairs = [];
+    internal static Dictionary<LevelFieldType, FilterObject> filterKeyPairs = [];
     public static ConfigFile configFile = new();
 
     // Actual handle here

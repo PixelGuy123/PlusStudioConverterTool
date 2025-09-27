@@ -2,6 +2,7 @@ using PlusLevelFormat;
 using PlusStudioConverterTool.Models;
 using PlusStudioConverterTool.Services;
 using PlusStudioLevelFormat;
+using PlusStudioLevelLoader;
 using UnityEngine;
 
 namespace PlusStudioConverterTool.Converters;
@@ -9,19 +10,20 @@ namespace PlusStudioConverterTool.Converters;
 internal static partial class Converters
 {
     #region CBLDTORBPL
-    public static List<BaldiRoomAsset> ConvertCBLDtoRBPLFormat(this Level level)
+    public static List<BaldiRoomAsset> ConvertCBLDtoRBPLFormat(this Level level, bool allowAutomaticPotentialDoorPlacement)
     {
         ConsoleHelper.LogInfo("Converting CBLD rooms to RBPL...");
         var roomAssets = new List<BaldiRoomAsset>();
 
-        ConsoleHelper.LogInfo("Analyzing each room...");
+
         bool onlyHallways = !level.rooms.Exists(room => room.type != "hall"); // If there's any room with a different type, there's not only hallways
+        ConsoleHelper.LogInfo("Analyzing each room...");
         for (int i = 0; i < level.rooms.Count; i++)
         {
             var roomProperties = level.rooms[i];
             ushort currentRoomId = (ushort)(i + 1); // Room IDs are 1-based
 
-            if ((onlyHallways && roomProperties.type == "hall") || !UpdateOldAssetName(ref roomProperties.type, LevelFieldType.RoomCategory)) continue;
+            if ((!onlyHallways && roomProperties.type == "hall") || !UpdateOldAssetName(ref roomProperties.type, LevelFieldType.RoomCategory)) continue;
             ConsoleHelper.LogConverterInfo($"Checking room {currentRoomId} ({roomProperties.type})...");
 
             string floor = roomProperties.textures.floor;
@@ -259,6 +261,30 @@ internal static partial class Converters
             }
             else
                 ConsoleHelper.LogConverterInfo("The room has no activity available.");
+
+            // Add potential door spots if allowed to
+            if (allowAutomaticPotentialDoorPlacement)
+            {
+                counter = 0;
+                ConsoleHelper.LogConverterInfo("Adding potential door spots to suitable places...");
+                foreach (var cell in roomAsset.cells)
+                {
+                    if (roomAsset.potentialDoorPositions.Contains(cell.position)) continue; // Skip cells which already have potential door spots
+
+                    for (int z = 0; z < 4; z++)
+                    {
+                        var newPos = cell.position + ((Direction)z).ToNETIntVector2().ToByte();
+                        if (!roomAsset.cells.Exists(checkCell => checkCell.position == newPos)) // Checks if no cell gets into that position - which means the current cell in check is a "border" cell
+                        {
+                            roomAsset.potentialDoorPositions.Add(cell.position);
+                            counter++;
+                            break; // Stop this loop and go to the next cell
+                        }
+                    }
+                }
+                ConsoleHelper.LogConverterInfo($"{counter} additional potential door spots were added!");
+            }
+
 
             // Generate a unique name for the asset file
             roomAsset.name += "_" + i + "_" + roomAsset.cells.Count + "_" + (roomAsset.activity == null ? "null" : roomAsset.activity.type);

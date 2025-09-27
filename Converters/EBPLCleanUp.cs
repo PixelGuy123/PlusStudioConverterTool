@@ -79,15 +79,35 @@ internal static partial class Converters
                 newData.posters.RemoveAt(i--);
 
         // Lights
+        bool lightRemoved = false;
         for (int i = 0; i < newData.lights.Count; i++)
+        {
             if (!newData.ValidatePosition(newData.lights[i].position) || !UpdateOldAssetName(ref newData.lights[i].type, LevelFieldType.Light))
+            {
                 newData.lights.RemoveAt(i--);
+                lightRemoved = true;
+            }
+        }
 
         // Light group cleanup
-        for (int i = 0; i < newData.lightGroups.Count; i++) // They basically work by indexing, if no light is referring to its index, that light group becomes obsolete
+        if (lightRemoved) // Only if lights were actually removed
         {
-            if (!newData.lights.Exists(light => light.lightGroup == i))
-                newData.lightGroups.RemoveAt(i--);
+            for (int i = 0; i < newData.lightGroups.Count; i++) // They basically work by indexing, if no light is referring to its index, that light group becomes obsolete
+            {
+                if (!newData.lights.Exists(light => light.lightGroup == i))
+                {
+                    newData.lightGroups.RemoveAt(i);
+                    for (int z = 0; z < newData.lights.Count; z++)
+                    {
+                        if (newData.lights[i].lightGroup >= i) // If any light is above this index, 
+                                                               // it means the light groups referenced here must subtract 1 to be equal to the amount of light groups left in the list
+                            newData.lights[i].lightGroup--;
+                    }
+                    i--; // Reduce one to not go out of bounds
+                }
+            }
+
+            if (newData.lightGroups.Count == 0) newData.lightGroups.Add(new()); // Adds default light group if everything was destroyed
         }
 
         // Random events (string list)

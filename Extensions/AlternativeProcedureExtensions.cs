@@ -405,7 +405,13 @@ internal static class AltLevelLoaderExtensions
     };
     readonly static Dictionary<string, Type> markerTypes = new()
     {
-        { "matchballoon", typeof(MatchBalloonMarker) }
+        { "matchballoon", typeof(MatchBalloonMarker) },
+        { "potentialdoor", typeof(PotentialDoorLocation) },
+        { "forceddoor", typeof(ForcedDoorLocation) },
+        { "lightspot", typeof(RoomLightLocation) },
+        { "hidden", typeof(HiddenCellMarker) },
+        { "entityunsafe", typeof(EntityUnsafeCellLocation) },
+        { "eventunsafe", typeof(EventUnsafeCellLocation) }
     };
 
 }

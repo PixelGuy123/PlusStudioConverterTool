@@ -33,6 +33,9 @@ namespace PlusStudioConverterTool.Services
                     action = ConvertBLDtoEBPLFiles;
                     break;
                 case TargetType.CBLDtoRBPL:
+                    settings = new CBLDtoRBPLSettings(
+                            ConsoleHelper.CheckIfUserInputsYOrN("Should the converter automatically add potential door spots for hallway-only rooms?")
+                        );
                     action = ConvertCBLDtoRBPLFiles;
                     break;
                 case TargetType.RBPLtoEBPL:
@@ -197,6 +200,10 @@ namespace PlusStudioConverterTool.Services
 
         private static void ConvertCBLDtoRBPLFiles(string file, string? exportFolder, out string fname, ConversionSettings? settings)
         {
+            ArgumentNullException.ThrowIfNull(settings);
+            if (settings is not CBLDtoRBPLSettings cbldSettings)
+                throw new ArgumentException($"ConversionSettings is not of CBLDtoRBPLSettings type.");
+
             ConsoleHelper.LogInfo("Reading CBLD level...");
             Level level;
             using (var reader = new BinaryReader(File.OpenRead(file)))
@@ -213,7 +220,7 @@ namespace PlusStudioConverterTool.Services
             // Ensure we don't overwrite an existing file: pick a unique filename
             fname = GetUniqueFilePath(fname);
 
-            var rooms = level.ConvertCBLDtoRBPLFormat();
+            var rooms = level.ConvertCBLDtoRBPLFormat(cbldSettings.AutoPotentialDoorPlacement);
             for (int i = 0; i < rooms.Count; i++)
             {
                 var room = rooms[i];
@@ -373,6 +380,7 @@ namespace PlusStudioConverterTool.Services
 
         abstract record ConversionSettings { }
         record EditorSettings(string EditorMode) : ConversionSettings { }
+        record CBLDtoRBPLSettings(bool AutoPotentialDoorPlacement) : ConversionSettings { }
         record BLDtoEBPLSettings(bool AutoLightFill, string EditorMode) : EditorSettings(EditorMode) { }
         delegate void ConversionMethod(string file, string? exportFolder, out string fname, ConversionSettings? settings);
     }

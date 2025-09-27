@@ -1,3 +1,5 @@
+using PlusStudioConverterTool.Models;
+
 namespace PlusStudioConverterTool.Services
 {
     internal static class ConsoleHelper
@@ -10,6 +12,14 @@ namespace PlusStudioConverterTool.Services
         public static void LogError(string message) => LogWithColor(message, ConsoleColor.Red);
 
         // **************** PROMPTS FOR GETTING USEFUL DATA **********************
+        // Pause action (usually for logging)
+        public static void WaitToProceed(string? promptMessage = null)
+        {
+            if (!string.IsNullOrEmpty(promptMessage))
+                Console.WriteLine(promptMessage);
+            Console.WriteLine("Press any key to continue...");
+            Console.ReadKey(true);
+        }
         // Y or N question-type prompt
         public static bool CheckIfUserInputsYOrN(string? promptMessage = null) // True if Y, False if anything else
         {
@@ -43,18 +53,53 @@ namespace PlusStudioConverterTool.Services
                 value = Console.ReadLine();
             }
         }
+        // Retrieve a range
+        public static bool RetrieveUserRange(int min, int max, out NumberRange range, string? promptMessage = null) =>
+            TryRetrieveUserRange(min, max, null, out range, promptMessage);
+
+        public static bool TryRetrieveUserRange(int min, int max, string? cancelStr, out NumberRange range, string? promptMessage = null)
+        {
+            if (min > max)
+                throw new ArgumentException($"No options were provided for the user\'s selection input. (Min: {min} | Max: {max})");
+
+            if (!string.IsNullOrEmpty(promptMessage))
+                Console.WriteLine(promptMessage);
+
+            // If Min = Max, it wouldn't make sense to choose a number that is equal lol
+            Console.WriteLine(min != max ? $"Select a range between {min} and {max} (for example: \'{min}..{max}\'):" : $"Choose the number {min} to proceed the action:");
+            var value = Console.ReadLine();
+
+            while (true)
+            {
+                if (value == cancelStr) // If it is the same number
+                {
+                    range = new();
+                    return false;
+                }
+
+                if (NumberRange.TryParse(value, out var newRange)) // Range conversion done
+                {
+                    range = newRange.GetValueOrDefault(); // Should always have a value though
+                    return true;
+                }
+
+                Console.WriteLine(min != max ? $"Select a range between {min} and {max} (for example: \'{min}..{max}\'):" : $"Choose the number {min} to proceed the action:");
+                value = Console.ReadLine();
+            }
+        }
         // Retrieve an integer
         public static int RetrieveUserNumber(int min, int max, string? promptMessage = null) =>
             RetrieveUserNumber(min, max, null, promptMessage);
         public static int RetrieveUserNumber(int min, int max, int? cancelNum, string? promptMessage = null)
         {
-            if (min > max || max == 0)
-                throw new ArgumentException("No options were provided for the user\'s selection input.");
+            if (min > max)
+                throw new ArgumentException($"No options were provided for the user\'s selection input. (Min: {min} | Max: {max})");
 
             if (!string.IsNullOrEmpty(promptMessage))
                 Console.WriteLine(promptMessage);
 
-            Console.WriteLine($"Select a number between {min} and {max}:");
+            // If Min = Max, it wouldn't make sense to choose a number that is equal lol
+            Console.WriteLine(min != max ? $"Select a number between {min} and {max}:" : $"Choose the number {min} to proceed the action:");
             var value = Console.ReadLine();
 
             while (true)
@@ -64,7 +109,7 @@ namespace PlusStudioConverterTool.Services
                 if (cancelNum == option)
                     return option;
 
-                Console.WriteLine($"Select a number between {min} and {max}:");
+                Console.WriteLine(min != max ? $"Select a number between {min} and {max}:" : $"Choose the number {min} to proceed the action:");
                 value = Console.ReadLine();
             }
         }

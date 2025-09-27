@@ -8,14 +8,19 @@ namespace PlusStudioConverterTool.Converters;
 
 internal static partial class Converters
 {
-    public static string[] GetEditorDefaultTools(string editorMode) => editorMode switch
+    public static string[] GetEditorDefaultTools(string editorMode)
     {
-        "full" => ["room_hall", "room_class", "room_faculty", "room_office", "light_fluorescent", "door_swinging", "door_standard", "merge", "delete"],
-        "compliant" => ["room_hall", "room_class", "room_faculty", "room_office", "light_fluorescent", "door_swinging", "door_standard", "merge", "delete"],
-        "room" => ["room_class", "room_faculty", "room_office", "technical_potentialdoor", "technical_lightspot", "marker_eventunsafe", "itemspawn_100", "merge", "delete"],
-        _ => [string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty]
-    };
-    static MarkerLocation? TryConvertToMarker(this BasicObjectInfo obj, EditorLevelData levelData) => obj.prefab switch
+        switch (editorMode)
+        { // string length must be 9
+            case "full": return ["room_hall", "room_class", "room_faculty", "room_office", "light_fluorescent", "door_swinging", "door_standard", "merge", "delete"];
+            case "compliant": return ["room_hall", "room_class", "room_faculty", "room_office", "light_fluorescent", "door_swinging", "door_standard", "merge", "delete"];
+            case "rooms": return ["room_class", "room_faculty", "room_office", "technical_potentialdoor", "technical_lightspot", "marker_eventunsafe", "itemspawn_100", "merge", "delete"];
+            default:
+                ConsoleHelper.LogWarn($"No default tools were found for mode \'{editorMode}\'! Using default set!");
+                return ["room_hall", "room_class", "room_faculty", "room_office", "light_fluorescent", "door_swinging", "door_standard", "merge", "delete"];
+        }
+    }
+    static MatchBalloonMarker? TryConvertToMarker(this BasicObjectInfo obj, EditorLevelData levelData) => obj.prefab switch
     {
         "matchballoon" => new MatchBalloonMarker() { position = obj.position.ToUnity(), type = obj.prefab },
         _ => null,

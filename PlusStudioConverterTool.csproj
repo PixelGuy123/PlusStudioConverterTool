@@ -7,8 +7,8 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Description>Provides a handful amount of options to manipulate editor level files.</Description>
-    <FileVersion>2.0.3.0</FileVersion>
-    <AssemblyVersion>2.0.3.0</AssemblyVersion>
+    <FileVersion>2.0.3.1</FileVersion>
+    <AssemblyVersion>2.0.3.1</AssemblyVersion>
     <PackageIcon></PackageIcon>
     <ApplicationIcon>cbldtobld.ico</ApplicationIcon>
     <PublishTrimmed>true</PublishTrimmed>
