@@ -30,7 +30,7 @@ internal static partial class Converters
 			maxY = roomAsset.cells.Max(c => c.position.y);
 		}
 		// Add a small buffer to ensure the entire room fits comfortably.
-		var mapSize = new IntVector2(maxX + 2, maxY + 2);
+		var mapSize = new IntVector2(maxX + 1, maxY + 1);
 		ConsoleHelper.LogConverterInfo($"Calculated map size: {mapSize.x}x{mapSize.z}");
 
 		// 2. Initialize EditorLevelData with the calculated size and default metadata.

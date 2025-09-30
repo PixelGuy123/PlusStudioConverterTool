@@ -263,7 +263,7 @@ internal static partial class Converters
                 ConsoleHelper.LogConverterInfo("The room has no activity available.");
 
             // Add potential door spots if allowed to
-            if (allowAutomaticPotentialDoorPlacement)
+            if (onlyHallways && allowAutomaticPotentialDoorPlacement)
             {
                 counter = 0;
                 ConsoleHelper.LogConverterInfo("Adding potential door spots to suitable places...");
