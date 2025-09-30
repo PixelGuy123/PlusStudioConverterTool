@@ -1,4 +1,5 @@
 using PlusLevelFormat;
+using PlusLevelLoader;
 using PlusStudioConverterTool.Models;
 using PlusStudioConverterTool.Services;
 using PlusStudioLevelFormat;
@@ -128,9 +129,8 @@ internal static partial class Converters
 
             foreach (var obj in roomProperties.prefabs)
             {
-                var objPos = new Vector3(obj.position.x, obj.position.y, obj.position.z);
-                var cellPos = new IntVector2(Mathf.RoundToInt((objPos.x - 5f) / 10f), Mathf.RoundToInt((objPos.z - 5f) / 10f));
-                var byteCellPos = new PlusStudioLevelFormat.ByteVector2(cellPos.x, cellPos.z);
+                Vector3 realPosition = obj.position.ToUnity() - new Vector3(offsetX * 10f, 0, offsetY * 10f); // Get real offset
+                var byteCellPos = PlusStudioLevelLoader.Extensions.ToByte(IntVector2.GetGridPosition(realPosition));
                 // Console.WriteLine($"Found prefab: {obj.prefab}");
                 bool isMarker = true;
                 switch (obj.prefab)
@@ -143,7 +143,7 @@ internal static partial class Converters
                         break;
                     case "itemSpawnMarker":
                         // This marker becomes an ItemSpawnPlacement, not a structure, with a default weight.
-                        roomAsset.itemSpawns.Add(new() { position = new UnityVector2(objPos.x, objPos.z), weight = 100 });
+                        roomAsset.itemSpawns.Add(new() { position = new UnityVector2(realPosition.x, realPosition.z), weight = 100 });
                         break;
                     case "nonSafeCellMarker":
                         roomAsset.entitySafeCells.Remove(byteCellPos);
@@ -273,7 +273,7 @@ internal static partial class Converters
 
                     for (int z = 0; z < 4; z++)
                     {
-                        var newPos = cell.position + ((Direction)z).ToNETIntVector2().ToByte();
+                        var newPos = cell.position + PlusStudioLevelLoader.Extensions.ToByte(((Direction)z).ToNETIntVector2());
                         if (!roomAsset.cells.Exists(checkCell => checkCell.position == newPos)) // Checks if no cell gets into that position - which means the current cell in check is a "border" cell
                         {
                             roomAsset.potentialDoorPositions.Add(cell.position);

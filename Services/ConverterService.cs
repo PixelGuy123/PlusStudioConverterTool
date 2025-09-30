@@ -215,17 +215,15 @@ namespace PlusStudioConverterTool.Services
             if (string.IsNullOrEmpty(targetDir))
                 throw new DirectoryNotFoundException("Could not determine target directory for output file.");
 
-            fname = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(file) + ".rbpl");
-
-            // Ensure we don't overwrite an existing file: pick a unique filename
-            fname = GetUniqueFilePath(fname);
+            fname = Path.Combine(targetDir, Path.GetFileNameWithoutExtension(file));
+            string originalFileName = fname;
 
             var rooms = level.ConvertCBLDtoRBPLFormat(cbldSettings.AutoPotentialDoorPlacement);
             for (int i = 0; i < rooms.Count; i++)
             {
                 var room = rooms[i];
+                fname = GetUniqueFilePath(originalFileName + $"_{room.type}_{i + 1}.rbpl");
                 using var writer = new BinaryWriter(File.OpenWrite(fname));
-                fname = GetUniqueFilePath(fname + $"_{room.type}_{i + 1}");
                 room.Write(writer);
                 ConsoleHelper.LogInfo($"Created {Path.GetFileName(fname)} with success!");
             }
